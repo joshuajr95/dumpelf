@@ -497,8 +497,10 @@ typedef struct
     /*
      * Gives the name of the section. The value is
      * an index into the section header string
-     * table section, which stores all of the strings
-     * in the file.
+     * table section, which stores all of the names
+     * of the sections in the file. This is distinct
+     * from the general string table, which contains
+     * names such as functions and the name of the file.
      */
     ELF32_Word_t sh_name;
 
@@ -605,8 +607,10 @@ typedef struct
     /*
      * Gives the name of the section. The value is
      * an index into the section header string
-     * table section, which stores all of the strings
-     * in the file.
+     * table section, which stores all of the names
+     * of the sections in the file. This is distinct
+     * from the general string table, which contains
+     * names such as functions and the name of the file.
      */
     ELF64_Word_t sh_name;
 
@@ -724,6 +728,428 @@ typedef struct
  * the section header struct are undefined.
  */
 #define SHT_NULL        0
+
+
+/*
+ * The section contains program-specific information whose
+ * format, meaning, and contents are defined by the program.
+ */
+#define SHT_PROGBITS    1
+
+
+/*
+ * This section holds a symbol table.
+ */
+#define SHT_SYMTAB      2
+
+
+/*
+ * This section holds a string table.
+ */
+#define SHT_STRTAB      3
+
+
+/*
+ * The section holds relocation entries with explicit
+ * addends. An ELF file may have multiple relocation
+ * sections.
+ */
+#define SHT_RELA        4
+
+
+/*
+ * The section holds a symbol hash table.
+ */
+#define SHT_HASH        5
+
+
+/*
+ * The section holds information for dynamic linking.
+ */
+#define SHT_DYNAMIC     6
+
+
+/*
+ * The section holds information that marks the file
+ * in some way.
+ */
+#define SHT_NOTE        7
+
+
+/*
+ * The section resembles a section of type SHT_PROGBITS
+ * except that it takes up no space in the file. The
+ * sh_offset member still marks the location of the 
+ * section in the file.
+ */
+#define SHT_NOBITS      8
+
+
+/*
+ * The section holds relocation entries without explicit
+ * addends. The file may have multiple relocation sections.
+ */
+#define SHT_REL         9
+
+
+/*
+ * Reserved section type with unspecified semantics.
+ */
+#define SHT_SHLIB       10
+
+
+/*
+ * This section holds a symbol table.
+ */
+#define SHT_DYNSYM      11
+
+
+/*
+ * Values in this range are reserved for
+ * processor-specific semantics.
+ */
+#define SHT_LOPROC      0x70000000
+#define SHT_HIPROC      0x7fffffff
+
+
+/*
+ * Values in this range are reserved for application
+ * programs to use without conflicting with current or
+ * future system-defined section types.
+ */
+#define SHT_LOUSER      0x80000000
+#define SHT_HIUSER      0xffffffff
+
+
+
+/*
+ * Masks for section header flags. The corresponding bit(s)
+ * being set indicates the section has the given attribute.
+ */
+#define SHF_WRITE       0x1         // Flag marks section as writable during process execution
+#define SHF_ALLOC       0x2         // Flag marks section as occupying memory in process image
+#define SHF_EXECINSTR   0x4         // Flag marks section as containing executable machine instructions
+#define SHF_MASKPROC    0xf0000000  // Processor-specific semantics
+
+
+#define STN_UNDEF       0           // Undefined symbol index in the symbol table
+
+
+typedef struct
+{
+
+    /*
+     * Gives an index into one of the object file's
+     * string tables. This index gives the name of
+     * the symbol. For symbols of type STT_SECTION
+     * the index is into the .shstrtab table, and
+     * for others it is .strtab table.
+     */
+    ELF32_Word_t st_name;
+
+
+    /*
+     * Gives the value of the associated symbol. Depending
+     * on the type of the object file and the type of the
+     * section the symbol is in.
+     * 
+     * For relocatable object files, for symbols defined
+     * against section index SHN_COMMON, st_value holds
+     * alignment constraints. For symbols defined against
+     * any other section in relocatable files, st_value
+     * holds the offset from the beginning of the section
+     * referenced by st_shndx.
+     * 
+     * For executable and shared object files, st_value
+     * holds a virtual address.
+     */
+    ELF32_Addr_t st_value;
+
+
+    /*
+     * Gives the size of the data object referenced by the
+     * symbol. Size is 0 if object takes up no space or the
+     * size is unknown.
+     */
+    ELF32_Word_t st_size;
+
+
+    /*
+     * The upper 4 bits of this member contain the symbol's
+     * binding characteristics, and the lower 4 bits contain
+     * the symbol's type. Macros to manipulate this member
+     * are given elsewhere.
+     */
+    unsigned char st_info;
+
+
+    /*
+     * Currently defined to be 0 and given no meaning.
+     */
+    unsigned char st_other;
+
+
+    /*
+     * Since every symbol is defined relative to some section
+     * of the object file, this member gives the index into the
+     * section header table of the relevant section. Some section
+     * indexes have special meanings. See section index definitions
+     * for details.
+     */
+    ELF32_Half_t st_shndx;
+
+    
+} ELF32_Sym_t;
+
+
+
+typedef struct
+{
+
+    /*
+     * Gives an index into one of the object file's
+     * string tables. This index gives the name of
+     * the symbol. For symbols of type STT_SECTION
+     * the index is into the .shstrtab table, and
+     * for others it is .strtab table.
+     */
+    ELF64_Word_t st_name;
+
+
+    /*
+     * Gives the value of the associated symbol. Depending
+     * on the type of the object file and the type of the
+     * section the symbol is in.
+     * 
+     * For relocatable object files, for symbols defined
+     * against section index SHN_COMMON, st_value holds
+     * alignment constraints. For symbols defined against
+     * any other section in relocatable files, st_value
+     * holds the offset from the beginning of the section
+     * referenced by st_shndx.
+     * 
+     * For executable and shared object files, st_value
+     * holds a virtual address.
+     */
+    ELF64_Addr_t st_value;
+
+
+    /*
+     * Gives the size of the data object referenced by the
+     * symbol. Size is 0 if object takes up no space or the
+     * size is unknown.
+     */
+    ELF64_Word_t st_size;
+
+
+    /*
+     * The upper 4 bits of this member contain the symbol's
+     * binding characteristics, and the lower 4 bits contain
+     * the symbol's type. Macros to manipulate this member
+     * are given elsewhere.
+     */
+    unsigned char st_info;
+
+
+    /*
+     * Currently defined to be 0 and given no meaning.
+     */
+    unsigned char st_other;
+
+
+    /*
+     * Since every symbol is defined relative to some section
+     * of the object file, this member gives the index into the
+     * section header table of the relevant section. Some section
+     * indexes have special meanings. See section index definitions
+     * for details.
+     */
+    ELF64_Half_t st_shndx;
+
+    
+} ELF64_Sym_t;
+
+
+
+/*
+ * Extracts the binding information from the
+ * st_info member of the symbol table entry.
+ * Binding is the upper 4 bits of the member.
+ */
+#define ELF_ST_BIND(i) ((i)>>4)
+
+
+/*
+ * Extracts the type information from the st_info
+ * member of the symbol table entry. Type information
+ * is the lower 4 bits of the member.
+ */
+#define ELF_ST_TYPE(i) ((i)&0xf)
+
+
+/*
+ * Constructs the st_info member from the given binding
+ * information b and type information t. Shifts b into
+ * the upper 4 bits of st_info, applies bitwise AND mask
+ * to t to clear upper 4 bits of t and bitwise ORs the
+ * two together.
+ */
+#define ELF_ST_INFO(b,t)( ((b)<<4) | ((t)&0xf) )
+
+
+
+
+/*******************************
+ * Symbol binding definitions. *
+ *******************************/
+
+
+
+/*
+ * Symbols with local binding are not visible outside the file they
+ * are defined in. Local symbols of the same name may exist in different
+ * files without interfering with each other.
+ */
+#define STB_LOCAL 0
+
+
+/*
+ * Global symbols are visible to all object files being combined.
+ * One file's definition of a global symbol satisfies another file's
+ * undefined reference to that global symbol.
+ */
+#define STB_GLOBAL 1
+
+
+/*
+ * Weak symbols are similar to global symbols but with lower precedence.
+ * A weak symbol has the same visibility as a global symbol, but given
+ * a global symbol and a weak symbol, the global symbol will be chosen.
+ */
+#define STB_WEAK 2
+
+
+// Processor-specific semantics
+#define STB_LOPROC 13
+#define STB_HIPROC 15
+
+
+
+/***************************
+ * Symbol type definitions *
+ ***************************/
+
+
+/*
+ * Symbol type not defined.
+ */
+#define STT_NOTYPE 0
+
+
+/*
+ * The symbol is associated with a data
+ * object, like a variable, and array, a struct, etc.
+ */
+#define STT_OBJECT 1
+
+
+/*
+ * The symbol is associated with a function or
+ * other executable code.
+ */
+#define STT_FUNC 2
+
+
+/*
+ * The symbol is associated with a given section of
+ * the object file. These symbols are primarily used
+ * for relocation and are usually given STB_LOCAL binding.
+ */
+#define STT_SECTION 3
+
+
+/*
+ * The symbol is associated with a filename, for example
+ * the name of the file the object file was compiled from.
+ */
+#define STT_FILE 4
+
+
+// Processor-specific semantics
+#define STT_LOPROC 13
+#define STT_HIPROC 15
+
+
+
+
+/*******************************************************
+ * This section defines the 32 and 64 bit relocation
+ * entries. Relocation entries are used to keep track
+ * of the places in the code where unresolved references
+ * are used in the code. This allows the linker to
+ * adjust the references to point to the right place.
+ * For example, a function used in one file but defined
+ * in another would compile to a call instruction. This
+ * call instruction would have a reference to the
+ * address of the function to be called, which is not
+ * known when the file is compiled. The compiler would
+ * then leave this address as zero and add a relocation
+ * entry to the output ELF file. The process of 
+ * relocation would then be left to the linker.
+ ********************************************************/
+
+
+
+/*
+ * Relocation entry without explicit addends.
+ */
+typedef struct
+{
+
+    /*
+     * This gives the location at which to apply
+     * the relocation. For relocatable object files
+     * this value is the offset from the beginning
+     * of the section to the location that is affected.
+     * For executable and shared object files, this
+     * value gives the virtual address of the location
+     * that is affected.
+     */
+    ELF32_Addr_t r_offset;
+
+
+    /*
+     * 
+     */
+    ELF32_Word_t r_info;
+
+
+} ELF32_Rel_t;
+
+
+typedef struct
+{
+    
+    /*
+     *
+     */
+    ELF32_Addr_t r_offset;
+
+
+    /*
+     *
+     */
+    ELF32_Word_t r_info;
+
+
+    /*
+     *
+     */
+    ELF32_Sword_t r_addend;
+
+
+};
+
 
 
 
