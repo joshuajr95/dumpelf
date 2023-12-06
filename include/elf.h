@@ -1101,7 +1101,7 @@ typedef struct
 
 
 /*
- * Relocation entry without explicit addends.
+ * 32-bit Relocation entry without explicit addends.
  */
 typedef struct
 {
@@ -1119,7 +1119,10 @@ typedef struct
 
 
     /*
-     * 
+     * This gives the symbol table index of the object
+     * to apply the relocation to as well as the type
+     * of relocation to apply. Relocation types are
+     * processor-specific.
      */
     ELF32_Word_t r_info;
 
@@ -1127,28 +1130,336 @@ typedef struct
 } ELF32_Rel_t;
 
 
+
+/*
+ * 32-bit relocation entry with explicit addends.
+ */
 typedef struct
 {
     
     /*
-     *
+     * Same as above.
      */
     ELF32_Addr_t r_offset;
 
 
     /*
-     *
+     * Same as above.
      */
     ELF32_Word_t r_info;
 
 
     /*
-     *
+     * Constant integer (positive or negative)
+     * to be added to the relocation information.
      */
     ELF32_Sword_t r_addend;
 
 
-};
+} ELF32_Rela_t;
+
+
+/*
+ * Macro for extracting symbol table index from r_info.
+ */
+#define ELF32_R_SYM(i) ((i)>>8)
+
+
+/*
+ * Macro for extracting relocation type from r_info.
+ */
+#define ELF32_R_TYPE(i) ((unsigned char)i)      // could also use bitwise & mask with 0xff, but whatever
+
+
+/*
+ * Macro for constructing r_info from symbol table index
+ * and relocation type.
+ */
+#define ELF32_R_INFO(s,t) (((s)<<8) + (unsigned char)(t))
+
+
+
+
+/*
+ * 64-bit Relocation entry without explicit addends.
+ */
+typedef struct
+{
+
+    /*
+     * This gives the location at which to apply
+     * the relocation. For relocatable object files
+     * this value is the offset from the beginning
+     * of the section to the location that is affected.
+     * For executable and shared object files, this
+     * value gives the virtual address of the location
+     * that is affected.
+     */
+    ELF64_Addr_t r_offset;
+
+
+    /*
+     * This gives the symbol table index of the object
+     * to apply the relocation to as well as the type
+     * of relocation to apply. Relocation types are
+     * processor-specific.
+     */
+    ELF64_Xword_t r_info;
+
+
+} ELF64_Rel_t;
+
+
+
+/*
+ * 32-bit relocation entry with explicit addends.
+ */
+typedef struct
+{
+    
+    /*
+     * Same as above.
+     */
+    ELF64_Addr_t r_offset;
+
+
+    /*
+     * Same as above.
+     */
+    ELF64_Xword_t r_info;
+
+
+    /*
+     * Constant integer (positive or negative)
+     * to be added to the relocation information.
+     */
+    ELF64_Sxword_t r_addend;
+
+
+} ELF64_Rela_t;
+
+
+
+/*
+ * Macro for extracting symbol table index from r_info.
+ */
+#define ELF64_R_SYM(i) ((i)>>32)
+
+
+/*
+ * Macro for extracting relocation type from r_info.
+ */
+#define ELF64_R_TYPE(i) ((i) & 0xffffffff)
+
+
+/*
+ * Macro for constructing r_info from symbol table index
+ * and relocation type.
+ */
+#define ELF64_R_INFO(s,t) (((s)<<32) + ((t) & 0xffffffff))
+
+
+
+
+
+/******************************************************
+ * This section defines structs and macros relating to
+ * program headers and information used in program
+ * loading.
+ ******************************************************/
+
+
+
+typedef struct
+{
+    
+
+    /*
+     * This describes the type of the segment this program
+     * header element refers to.
+     */
+    ELF32_Word_t p_type;
+
+
+    /*
+     * This member gives the offset from the beginning of the
+     * file at which the first byte of the segment resides.
+     */
+    ELF32_Off_t p_offset;
+
+
+    /*
+     * This member gives the virtual address at which the
+     * segment resides in memory.
+     */
+    ELF32_Addr_t p_vaddr;
+
+
+    /*
+     * If the target system supports physical addressing, then
+     * this member gives the physical address at which the
+     * segment resides.
+     */
+    ELF32_Addr_t p_paddr;
+
+
+    /*
+     * This member gives the size, in bytes, of the segment as
+     * it resides in the file.
+     */
+    ELF32_Word_t p_filesz;
+
+
+    /*
+     * This member gives the size, in bytes, of the segment as
+     * it appears in memory. This must be greater than or equal
+     * to p_filesz.
+     */
+    ELF32_Word_t p_memsz;
+
+
+    /*
+     * Defines relevant flags for the segment.
+     */
+    ELF32_Word_t p_flags;
+
+
+    /*
+     * Gives the value to which the segment is aligned in memory.
+     */
+    ELF32_Word_t p_align;
+    
+
+} ELF32_Program_Header_t;
+
+
+
+
+typedef struct
+{
+    
+
+    /*
+     * This describes the type of the segment this program
+     * header element refers to.
+     */
+    ELF64_Word_t p_type;
+
+
+    /*
+     * This member gives the offset from the beginning of the
+     * file at which the first byte of the segment resides.
+     */
+    ELF64_Off_t p_offset;
+
+
+    /*
+     * This member gives the virtual address at which the
+     * segment resides in memory.
+     */
+    ELF64_Addr_t p_vaddr;
+
+
+    /*
+     * If the target system supports physical addressing, then
+     * this member gives the physical address at which the
+     * segment resides.
+     */
+    ELF64_Addr_t p_paddr;
+
+
+    /*
+     * This member gives the size, in bytes, of the segment as
+     * it resides in the file.
+     */
+    ELF64_Xword_t p_filesz;
+
+
+    /*
+     * This member gives the size, in bytes, of the segment as
+     * it appears in memory. This must be greater than or equal
+     * to p_filesz.
+     */
+    ELF64_Xword_t p_memsz;
+
+
+    /*
+     * Defines relevant flags for the segment.
+     */
+    ELF64_Word_t p_flags;
+
+
+    /*
+     * Gives the value to which the segment is aligned in memory.
+     */
+    ELF64_Xword_t p_align;
+    
+
+} ELF64_Program_Header_t;
+
+
+
+/*****************
+ * Segment types *
+ *****************/
+
+
+/*
+ * The given segment is unused and the other elements of the
+ * program header struct are undefined. This allows the program
+ * header table to have ignored entries.
+ */
+#define PT_NULL     0
+
+
+/*
+ * This defines a loadable segment, i.e. a segment to be loaded
+ * into memory at the address specified by p_vaddr. The first,
+ * p_filesz bytes of the segment in the file will be mapped into
+ * the first p_filesz bytes in memory. The remaining p_memsz - p_filesz
+ * bytes of the memory segment will be 0 initialized.
+ */
+#define PT_LOAD     1
+
+
+/*
+ * This segment specifies dynamic linking information.
+ */
+#define PT_DYNAMIC  2
+
+
+/*
+ * This segment specifies the size and pathname of an interpreter.
+ */
+#define PT_INTERP   3
+
+
+/*
+ * Gives the location and size of auxiliary information.
+ */
+#define PT_NOTE     4
+
+
+/*
+ * Reserved but with unspecified semantics.
+ */
+#define PT_SHLIB    5
+
+
+/*
+ * This segment specifies the location, both in the file and in
+ * memory, of the program header table.
+ */
+#define PT_PHDR     6
+
+
+/*
+ * Low and high range of processor-specific semantics.
+ */
+#define PT_LOPROC   0x70000000
+#define PT_HIPROC   0x7fffffff
+
+
 
 
 
