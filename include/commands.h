@@ -1,6 +1,13 @@
-
+/* Author: Joshua Jacobs-Rebhun
+ * Date: December 5, 2023
+ *
+ * 
+ * Declarations relating to implementing commands.
+ */
 #ifndef COMMANDS_H
 #define COMMANDS_H
+
+#include "debug.h"
 
 
 /*
@@ -27,12 +34,6 @@ typedef enum
 
 
 
-typedef enum
-{
-    DBG_CMD_DUMP_FRAMES
-
-} debug_command_subtype;
-
 
 
 typedef struct
@@ -54,6 +55,17 @@ typedef struct
      */
     int section_number;
     char *section_name;
+
+
+    /*
+     * This is a string representation of the option
+     * specified on the command-line that invoked the
+     * given command, for example:
+     * 
+     * the string "--sections" invokes the CMD_DUMP_SECTION_HEADERS
+     * command. This is useful for printing error messages.
+     */
+    char *invoking_option;
 
 } command_t;
 
@@ -89,13 +101,14 @@ void release_command_list(command_list_t *list);
 /*
  * Functions for implementing the actual commands.
  */
-int dump_elf_header();
-int dump_section_headers();
-int dump_program_headers();
-int dump_symbol_table();
-int dump_relocation_info();
-int hex_dump_section(int section_number, char *section_name);
-int string_dump_section(int section_number, char *section_name);
+int dump_elf_header(FILE *input_file);
+int dump_section_headers(FILE *input_file);
+int dump_program_headers(FILE *input_file);
+int dump_symbol_table(FILE *input_file);
+int dump_relocation_info(FILE *input_file);
+int hex_dump_section(FILE *input_file, int section_number, char *section_name);
+int string_dump_section(FILE *input_file, int section_number, char *section_name);
+int dump_debug_info(FILE *input_file, debug_command_subtype subtype); 
 
 
 

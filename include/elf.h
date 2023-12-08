@@ -58,7 +58,7 @@ typedef uint32_t ELF32_Word_t;
 
 
 
-typedef struct HEADER
+typedef struct
 {
     /* 
      * Initial bytes mark the file as an object file
@@ -216,7 +216,7 @@ typedef int64_t ELF64_Sxword_t;
 
 
 
-typedef struct HEADER
+typedef struct
 {
     /* 
      * Initial bytes mark the file as an object file

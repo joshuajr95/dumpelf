@@ -8,6 +8,10 @@
 #ifndef READELF_H
 #define READELF_H
 
+
+#include <stdbool.h>
+
+
 #include "elf.h"
 
 
@@ -15,12 +19,13 @@
 
 
 int read_ELF_identification(FILE *input_file, unsigned char *buffer);
+int get_file_class(FILE *input_file);
 
 
 
 int read_ELF32_header(FILE *input_file, ELF32_Header_t *header);
 int read_ELF32_section_header(FILE *input_file, ELF32_Section_Header_t *header, int index);
-int read_ELF32_section_header_table(FILE *input_file, ELF32_Section_Header_t *header_table, int num_sections);
+int read_ELF32_section_header_table(FILE *input_file, ELF32_Section_Header_t *header_table);
 int read_ELF32_program_header(FILE *input_file, ELF32_Program_Header_t *header, int index);
 int read_ELF32_program_header_table(FILE *input_file, ELF32_Program_Header_t *header_table, int num_segments);
 
@@ -28,7 +33,7 @@ int read_ELF32_program_header_table(FILE *input_file, ELF32_Program_Header_t *he
 
 int read_ELF64_header(FILE *input_file, ELF64_Header_t *header);
 int read_ELF64_section_header(FILE *input_file, ELF64_Section_Header_t *header, int index);
-int read_ELF64_section_header_table(FILE *input_file, ELF64_Section_Header_t *header_table, int num_sections);
+int read_ELF64_section_header_table(FILE *input_file, ELF64_Section_Header_t *header_table);
 int read_ELF64_program_header(FILE *input_file, ELF64_Program_Header_t *header, int index);
 int read_ELF64_program_header_table(FILE *input_file, ELF64_Program_Header_t *header_table, int num_segments);
 

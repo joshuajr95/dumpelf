@@ -43,6 +43,7 @@ int is_int(char *string)
 {
     while(*string != '\0')
     {
+        // if char is out of range 0-9, it is not an integer
         if( (int)(*string) - (int)'0' >= 10 )
         {
             return 0;
@@ -50,6 +51,8 @@ int is_int(char *string)
 
         string++;
     }
+
+    return 1;
 }
 
 
@@ -58,6 +61,42 @@ void print_usage_message()
     // print the usage message
 }
 
+
+/*
+ * Convert the argument in --debug-dump=<argument> to a
+ * command subtype.
+ */
+int get_debug_subtype(char *string)
+{
+    if(strcmp(string, "abbrev") == 0)
+    {
+        return DBG_CMD_DUMP_ABBREV;
+    }
+    else if(strcmp(string, "addr") == 0)
+    {
+        return DBG_CMD_DUMP_ADDR;
+    }
+    else if(strcmp(string, "frames") == 0)
+    {
+        return DBG_CMD_DUMP_FRAMES;
+    }
+    else if(strcmp(string, "names") == 0)
+    {
+        return DBG_CMD_DUMP_NAMES;
+    }
+    else if(strcmp(string, "info") == 0)
+    {
+        return DBG_CMD_DUMP_INFO;
+    }
+    else if(strcmp(string, "aranges") == 0)
+    {
+        return DBG_CMD_DUMP_ARANGES;
+    }
+    else
+    {
+        return -1;
+    }
+}
 
 
 int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
@@ -70,32 +109,32 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
         if( (strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--file-header") == 0) )
         {
             new_command->type = CMD_DUMP_ELF_HEADER;
-            commands->command_array[i] = new_command;
+            add_command(commands, new_command);
         }
         else if( (strcmp(argv[i], "-l") == 0) || (strcmp(argv[i], "--segments") == 0) || (strcmp(argv[i], "--program-headers") == 0) )
         {
             new_command->type = CMD_DUMP_SECTION_HEADERS;
-            commands->command_array[i] = new_command;
+            add_command(commands, new_command);
         }
         else if( (strcmp(argv[i], "-S") == 0) || (strcmp(argv[i], "--sections") == 0) || (strcmp(argv[i], "--section-headers") == 0) )
         {
             new_command->type = CMD_DUMP_PROGRAM_HEADERS;
-            commands->command_array[i] = new_command;
+            add_command(commands, new_command);
         }
         else if( (strcmp(argv[i], "-e") == 0) || (strcmp(argv[i], "--headers") == 0) )
         {
             new_command->type = CMD_DUMP_ALL_HEADERS;
-            commands->command_array[i] = new_command;
+            add_command(commands, new_command);
         }
         else if( (strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--syms") == 0) || (strcmp(argv[i], "--symbols") == 0) )
         {
             new_command->type = CMD_DUMP_SYMBOL_TABLE;
-            commands->command_array[i] = new_command;
+            add_command(commands, new_command);
         }
         else if( (strcmp(argv[i], "-r") == 0) || (strcmp(argv[i], "--relocs") == 0) )
         {
             new_command->type = CMD_DUMP_RELOCATION_INFO;
-            commands->command_array[i] = new_command;
+            add_command(commands, new_command);
         }
         else if(is_substring("--hex-dump=", argv[i]))
         {
@@ -113,6 +152,8 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
                 new_command->section_name = (char *)malloc(strlen(ptr)*sizeof(char));
                 strcpy(new_command->section_name, ptr, strlen(ptr));
             }
+
+            add_command(commands, new_command);
         }
         else if(is_substring("--string-dump=", argv[i]))
         {
@@ -130,10 +171,24 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
                 new_command->section_name = (char *)malloc(strlen(ptr)*sizeof(char));
                 strcpy(new_command->section_name, ptr, strlen(ptr));
             }
+
+            add_command(commands, new_command);
         }
         else if(is_substring("--debug-dump=", argv[i]))
         {
+            char *ptr;
+            new_command->type = CMD_DUMP_DEBUG_INFO;
 
+            ptr = argv[i] + strlen("--debug-dump=");
+
+            if((new_command->subtype = get_debug_subtype(ptr)) < 0)
+            {
+                printf("Unrecognized option to --debug-dump: %s", ptr);
+                print_usage_message();
+                return -1;
+            }
+
+            add_command(commands, new_command);
         }
         else if( argv[i][0] != '-' )
         {
@@ -181,6 +236,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+
     // open file and return early if not found
     if((file_handle = fopen(filename, "r")) == 0)
     {
@@ -215,11 +271,15 @@ int main(int argc, char *argv[])
             case CMD_STRING_DUMP_SECTION:
                 string_dump_section(commands.command_array[i]->section_number, commands.command_array[i]->section_name);
                 break;
-            
+            case CMD_DUMP_DEBUG_INFO:
+                dump_debug_info(commands.command_array[i]->subtype);
+                break;
+            default:
+                printf("Unrecognized option.\n");       // add mapping from command to option specified
+                print_usage_message();
+                break;
         }
     }
-
-    
 
 
     return 0;
