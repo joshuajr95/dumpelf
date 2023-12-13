@@ -17,7 +17,7 @@
 
 
 
-typedef uint8_t BYTE
+typedef uint8_t BYTE;
 
 
 

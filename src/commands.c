@@ -143,6 +143,7 @@ int dump_elf_header(FILE *input_file)
 }
 
 
+
 int dump_section_headers(FILE *input_file)
 {
     ELF32_Header_t header_32;
@@ -161,19 +162,25 @@ int dump_section_headers(FILE *input_file)
         read_ELF32_header(input_file, &header_32);
         section_header_32 = (ELF32_Section_Header_t*) malloc(sizeof(ELF32_Section_Header_t)*header_32.e_shnum);
 
-        read_ELF32_section_header_table(input_file, section_header_32);
+        read_ELF32_section_header_table(input_file, section_header_32, header_32.e_shnum);
         output_string = stringify_ELF32_section_headers(section_header_32, header_32.e_shnum);
+
+        free(section_header_32);
         break;
     
     case ELFCLASS64:
         read_ELF64_header(input_file, &header_64);
         section_header_64 = (ELF64_Section_Header_t*) malloc(sizeof(ELF64_Section_Header_t)*header_64.e_shnum);
 
-        read_ELF64_section_header_table(input_file, section_header_64);
+        read_ELF64_section_header_table(input_file, section_header_64, header_64.e_shnum);
         output_string = stringify_ELF64_section_headers(section_header_64, header_64.e_shnum);
+
+        free(section_header_64);
         break;
     
     default:
+        printf("ELF file has no class.\n");
+        return -1;
         break;
     }
 
@@ -183,4 +190,91 @@ int dump_section_headers(FILE *input_file)
     return 0;
 }
 
+
+
+int dump_program_headers(FILE *input_file)
+{
+    ELF32_Header_t header_32;
+    ELF64_Header_t header_64;
+
+    ELF32_Program_Header_t *program_header_32;
+    ELF64_Program_Header_t *program_header_64;
+
+    char *output_string;
+
+    int file_class = get_file_class(input_file);
+
+    switch(file_class)
+    {
+        case ELFCLASS32:
+            read_ELF32_header(input_file, &header_32);
+            program_header_32 = (ELF32_Program_Header_t*) malloc(sizeof(ELF32_Program_Header_t)*header_32.e_phnum);
+
+            read_ELF32_program_header_table(input_file, program_header_32, header_32.e_phnum);
+            output_string = stringify_ELF32_program_headers(program_header_32, header_32.e_phnum);
+
+            free(program_header_32);
+            break;
+        
+        case ELFCLASS64:
+            read_ELF64_header(input_file, &header_64);
+            program_header_64 = (ELF64_Program_Header_t*) malloc(sizeof(ELF64_Program_Header_t)*header_64.e_phnum);
+
+            read_ELF64_program_header_table(input_file, program_header_64, header_64.e_phnum);
+            output_string = stringify_ELF64_program_headers(program_header_64, header_64.e_phnum);
+
+            free(program_header_64);
+            break;
+        
+        default:
+            printf("ELF file has no class.\n");
+            return -1;
+            break;
+    }
+
+    fprintf(stdout, output_string);
+    free(output_string);
+
+    return 0;
+}
+
+
+
+int dump_symbol_table(FILE *input_file)
+{
+    fprintf(stderr, "TODO: Dump the symbol table.\n");
+    return -1;
+}
+
+
+
+int dump_relocation_info(FILE *input_file)
+{
+    fprintf(stderr, "TODO: Dump the relocation info.\n");
+    return -1;
+}
+
+
+
+int hex_dump_section(FILE *input_file, int section_number, char *section_name)
+{
+    fprintf(stderr, "TODO: Hex dump a particular section.\n");
+    return -1;
+}
+
+
+
+int string_dump_section(FILE *input_file, int section_number, char *section_name)
+{
+    fprintf(stderr, "TODO: String dump a particular section.\n");
+    return -1;
+}
+
+
+
+int dump_debug_info(FILE *input_file, debug_command_subtype subtype)
+{
+    fprintf(stderr, "TODO: Dump a section of debugging symbols.\n");
+    return -1;
+}
 

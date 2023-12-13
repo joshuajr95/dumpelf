@@ -38,7 +38,7 @@ $(INTERMEDIATE_FILES): $(INT_DIR)/%.i: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -E $< -o $@
 
 
-
+# build the code for debugging purposes. Just includes debugging symbols.
 debug:
 	$(MAKE) -f Makefile $(TARGET) -e CFLAGS=-g
 

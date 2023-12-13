@@ -18,13 +18,24 @@
 #include "commands.h"
 
 
-
+// probably change this to not be static variable. instead do local to main
 // file name and file pointer to
 // the specified file
 static char *filename;
 static FILE *file_handle;
 
 
+void finish_up_and_free_things()
+{
+    // free pointers that are dynamically allocated
+}
+
+
+
+/*
+ * Checks whether EITHER string1 is a substring
+ * of string2 OR string2 is a substring of string1.
+ */
 int is_substring(char *string1, char *string2)
 {
     int index = 0;
@@ -39,6 +50,13 @@ int is_substring(char *string1, char *string2)
     return 1;
 }
 
+
+/*
+ * Checks whether a given string can be converted to
+ * an integer using atoi(). This is used because atoi's
+ * behavior when passed a non-convertable string such as
+ * "hello3" is undefined.
+ */
 int is_int(char *string)
 {
     while(*string != '\0')
@@ -56,6 +74,11 @@ int is_int(char *string)
 }
 
 
+/*
+ * Prints the usage message to the screen. This
+ * is invoked whenever the user passes incorrect
+ * input or commands to dumpelf.
+ */
 void print_usage_message()
 {
     // print the usage message
@@ -111,33 +134,47 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
             new_command->type = CMD_DUMP_ELF_HEADER;
             add_command(commands, new_command);
         }
+
         else if( (strcmp(argv[i], "-l") == 0) || (strcmp(argv[i], "--segments") == 0) || (strcmp(argv[i], "--program-headers") == 0) )
         {
             new_command->type = CMD_DUMP_SECTION_HEADERS;
             add_command(commands, new_command);
         }
+
         else if( (strcmp(argv[i], "-S") == 0) || (strcmp(argv[i], "--sections") == 0) || (strcmp(argv[i], "--section-headers") == 0) )
         {
             new_command->type = CMD_DUMP_PROGRAM_HEADERS;
             add_command(commands, new_command);
         }
+
         else if( (strcmp(argv[i], "-e") == 0) || (strcmp(argv[i], "--headers") == 0) )
         {
             new_command->type = CMD_DUMP_ALL_HEADERS;
             add_command(commands, new_command);
         }
+
         else if( (strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--syms") == 0) || (strcmp(argv[i], "--symbols") == 0) )
         {
             new_command->type = CMD_DUMP_SYMBOL_TABLE;
             add_command(commands, new_command);
         }
+
         else if( (strcmp(argv[i], "-r") == 0) || (strcmp(argv[i], "--relocs") == 0) )
         {
             new_command->type = CMD_DUMP_RELOCATION_INFO;
             add_command(commands, new_command);
         }
+
         else if(is_substring("--hex-dump=", argv[i]))
         {
+            if(strlen("--hex-dump=") == strlen(argv[i]))
+            {
+                fprintf(stderr, "Unspecified section for --hex-dump.\n");
+                print_usage_message();
+                finish_up_and_free_things();
+                return -1;
+            }
+
             char *ptr;
             new_command->type = CMD_HEX_DUMP_SECTION;
             
@@ -155,8 +192,17 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
 
             add_command(commands, new_command);
         }
+
         else if(is_substring("--string-dump=", argv[i]))
         {
+            if(strlen("--string-dump=") == strlen(argv[i]))
+            {
+                fprintf(stderr, "Unspecified section for --string-dump.\n");
+                print_usage_message();
+                finish_up_and_free_things();
+                return -1;
+            }
+
             char *ptr;
             new_command->type = CMD_STRING_DUMP_SECTION;
             
@@ -174,8 +220,17 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
 
             add_command(commands, new_command);
         }
+
         else if(is_substring("--debug-dump=", argv[i]))
         {
+            if(strlen("--debug-dump=") == strlen(argv[i]))
+            {
+                fprintf(stderr, "Unspecified section for --debug-dump.\n");
+                print_usage_message();
+                finish_up_and_free_things();
+                return -1;
+            }
+
             char *ptr;
             new_command->type = CMD_DUMP_DEBUG_INFO;
 
@@ -185,21 +240,25 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
             {
                 printf("Unrecognized option to --debug-dump: %s", ptr);
                 print_usage_message();
+                finish_up_and_free_things();
                 return -1;
             }
 
             add_command(commands, new_command);
         }
+
         else if( argv[i][0] != '-' )
         {
             // any command-line argument without a begining '-'
             // is interpreted as a filename
             filename = argv[i];
         }
+
         else
         {
             printf("Unrecognized option: %s.\n", argv[i]);
             print_usage_message();
+            finish_up_and_free_things();
             return -1;
         }
     }
@@ -208,6 +267,7 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
     {
         printf("Filename not specified.\n");
         print_usage_message();
+        finish_up_and_free_things();
         return -1;
     }
 
@@ -251,32 +311,34 @@ int main(int argc, char *argv[])
         switch(commands.command_array[i]->type)
         {
             case CMD_DUMP_ELF_HEADER:
-                dump_elf_header();
+                dump_elf_header(file_handle);
                 break;
             case CMD_DUMP_SECTION_HEADERS:
-                dump_section_headers();
+                dump_section_headers(file_handle);
                 break;
             case CMD_DUMP_PROGRAM_HEADERS:
-                dump_program_headers();
+                dump_program_headers(file_handle);
                 break;
             case CMD_DUMP_SYMBOL_TABLE:
-                dump_symbol_table();
+                dump_symbol_table(file_handle);
                 break;
             case CMD_DUMP_RELOCATION_INFO:
-                dump_relocation_info();
+                dump_relocation_info(file_handle);
                 break;
             case CMD_HEX_DUMP_SECTION:
-                hex_dump_section(commands.command_array[i]->section_number, commands.command_array[i]->section_name);
+                hex_dump_section(file_handle, commands.command_array[i]->section_number, commands.command_array[i]->section_name);
                 break;
             case CMD_STRING_DUMP_SECTION:
-                string_dump_section(commands.command_array[i]->section_number, commands.command_array[i]->section_name);
+                string_dump_section(file_handle, commands.command_array[i]->section_number, commands.command_array[i]->section_name);
                 break;
             case CMD_DUMP_DEBUG_INFO:
-                dump_debug_info(commands.command_array[i]->subtype);
+                dump_debug_info(file_handle, commands.command_array[i]->subtype);
                 break;
             default:
                 printf("Unrecognized option.\n");       // add mapping from command to option specified
                 print_usage_message();
+                finish_up_and_free_things();
+                return -1;
                 break;
         }
     }
