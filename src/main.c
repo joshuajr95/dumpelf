@@ -10,6 +10,8 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
+#include <stdlib.h>
 
 
 #include "elf.h"
@@ -17,12 +19,6 @@
 #include "debug.h"
 #include "commands.h"
 
-
-// probably change this to not be static variable. instead do local to main
-// file name and file pointer to
-// the specified file
-static char *filename;
-static FILE *file_handle;
 
 
 void finish_up_and_free_things()
@@ -43,11 +39,11 @@ int is_substring(char *string1, char *string2)
     {
         if(string1[index] != string2[index])
         {
-            return 0;
+            return false;
         }
     }
 
-    return 1;
+    return true;
 }
 
 
@@ -64,13 +60,13 @@ int is_int(char *string)
         // if char is out of range 0-9, it is not an integer
         if( (int)(*string) - (int)'0' >= 10 )
         {
-            return 0;
+            return false;
         }
 
         string++;
     }
 
-    return 1;
+    return true;
 }
 
 
@@ -117,14 +113,15 @@ int get_debug_subtype(char *string)
     }
     else
     {
-        return -1;
+        return RET_NOT_OK;
     }
 }
 
 
-int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
+int parse_command_line_options(int argc, char *argv[], command_list_t *commands, char *filename)
 {
 
+    
     for(int i = 1; i < argc; i++)
     {
         command_t *new_command = (command_t*)malloc(sizeof(command_t));
@@ -132,36 +129,42 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
         if( (strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--file-header") == 0) )
         {
             new_command->type = CMD_DUMP_ELF_HEADER;
+            new_command->invoking_option = argv[i];
             add_command(commands, new_command);
         }
 
         else if( (strcmp(argv[i], "-l") == 0) || (strcmp(argv[i], "--segments") == 0) || (strcmp(argv[i], "--program-headers") == 0) )
         {
-            new_command->type = CMD_DUMP_SECTION_HEADERS;
+            new_command->type = CMD_DUMP_PROGRAM_HEADERS;
+            new_command->invoking_option = argv[i];
             add_command(commands, new_command);
         }
 
         else if( (strcmp(argv[i], "-S") == 0) || (strcmp(argv[i], "--sections") == 0) || (strcmp(argv[i], "--section-headers") == 0) )
         {
-            new_command->type = CMD_DUMP_PROGRAM_HEADERS;
+            new_command->type = CMD_DUMP_SECTION_HEADERS;
+            new_command->invoking_option = argv[i];
             add_command(commands, new_command);
         }
 
         else if( (strcmp(argv[i], "-e") == 0) || (strcmp(argv[i], "--headers") == 0) )
         {
             new_command->type = CMD_DUMP_ALL_HEADERS;
+            new_command->invoking_option = argv[i];
             add_command(commands, new_command);
         }
 
         else if( (strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--syms") == 0) || (strcmp(argv[i], "--symbols") == 0) )
         {
             new_command->type = CMD_DUMP_SYMBOL_TABLE;
+            new_command->invoking_option = argv[i];
             add_command(commands, new_command);
         }
 
         else if( (strcmp(argv[i], "-r") == 0) || (strcmp(argv[i], "--relocs") == 0) )
         {
             new_command->type = CMD_DUMP_RELOCATION_INFO;
+            new_command->invoking_option = argv[i];
             add_command(commands, new_command);
         }
 
@@ -172,11 +175,12 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
                 fprintf(stderr, "Unspecified section for --hex-dump.\n");
                 print_usage_message();
                 finish_up_and_free_things();
-                return -1;
+                return RET_NOT_OK;
             }
 
             char *ptr;
             new_command->type = CMD_HEX_DUMP_SECTION;
+            new_command->invoking_option = argv[i];
             
             ptr = argv[i] + strlen("--hex-dump=");
 
@@ -187,7 +191,7 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
             else
             {
                 new_command->section_name = (char *)malloc(strlen(ptr)*sizeof(char));
-                strcpy(new_command->section_name, ptr, strlen(ptr));
+                strncpy(new_command->section_name, ptr, strlen(ptr)+1);
             }
 
             add_command(commands, new_command);
@@ -200,11 +204,12 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
                 fprintf(stderr, "Unspecified section for --string-dump.\n");
                 print_usage_message();
                 finish_up_and_free_things();
-                return -1;
+                return RET_NOT_OK;
             }
 
             char *ptr;
             new_command->type = CMD_STRING_DUMP_SECTION;
+            new_command->invoking_option = argv[i];
             
             ptr = argv[i] + strlen("--string-dump=");
 
@@ -215,7 +220,7 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
             else
             {
                 new_command->section_name = (char *)malloc(strlen(ptr)*sizeof(char));
-                strcpy(new_command->section_name, ptr, strlen(ptr));
+                strncpy(new_command->section_name, ptr, strlen(ptr)+1);
             }
 
             add_command(commands, new_command);
@@ -228,11 +233,12 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
                 fprintf(stderr, "Unspecified section for --debug-dump.\n");
                 print_usage_message();
                 finish_up_and_free_things();
-                return -1;
+                return RET_NOT_OK;
             }
 
             char *ptr;
             new_command->type = CMD_DUMP_DEBUG_INFO;
+            new_command->invoking_option = argv[i];
 
             ptr = argv[i] + strlen("--debug-dump=");
 
@@ -241,7 +247,7 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
                 printf("Unrecognized option to --debug-dump: %s", ptr);
                 print_usage_message();
                 finish_up_and_free_things();
-                return -1;
+                return RET_NOT_OK;
             }
 
             add_command(commands, new_command);
@@ -259,20 +265,20 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
             printf("Unrecognized option: %s.\n", argv[i]);
             print_usage_message();
             finish_up_and_free_things();
-            return -1;
+            return RET_NOT_OK;
         }
     }
 
-    if (filename == 0)
+    if (filename == NULL)
     {
         printf("Filename not specified.\n");
         print_usage_message();
         finish_up_and_free_things();
-        return -1;
+        return RET_NOT_OK;
     }
 
 
-    return 0;
+    return RET_OK;
 }
 
 
@@ -280,28 +286,38 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands)
 
 int main(int argc, char *argv[])
 {
+    // file name and file pointer to
+    // the specified file
+    char *filename = NULL;
+    FILE *file_handle = NULL;
+
 
     command_list_t commands;
 
-    // initialize the command list with size argc since the number
-    // of command-line arguments gives an upper bound on the number
-    // of commands to dumpelf
+
+    /*
+     * initialize the command list with size argc since the number
+     * of command-line arguments gives an upper bound on the number
+     * of commands to dumpelf
+     */
     init_command_list(&commands, argc);
 
 
-    // parse the command-line options
-    // if they are not used correctly, then print error message
-    if(parse_command_line_options(argc, argv, &commands) != 0)
+    /*
+     * parse the command-line options
+     * if they are not used correctly, then print error message
+     */
+    if(parse_command_line_options(argc, argv, &commands, filename) != RET_OK)
     {
-        return -1;
+        return RET_NOT_OK;
     }
 
 
-    // open file and return early if not found
-    if((file_handle = fopen(filename, "r")) == 0)
+    // try to open file and return early if not found
+    if((file_handle = fopen(filename, "r")) == NULL)
     {
         printf("%s\n", strerror(errno));
-        return -1;
+        return RET_NOT_OK;
     }
 
 
@@ -335,14 +351,13 @@ int main(int argc, char *argv[])
                 dump_debug_info(file_handle, commands.command_array[i]->subtype);
                 break;
             default:
-                printf("Unrecognized option.\n");       // add mapping from command to option specified
                 print_usage_message();
                 finish_up_and_free_things();
-                return -1;
+                return RET_NOT_OK;
                 break;
         }
     }
 
 
-    return 0;
+    return RET_OK;
 }

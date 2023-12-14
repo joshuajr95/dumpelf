@@ -7,6 +7,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 #include "commands.h"
@@ -108,134 +110,252 @@ void release_command_list(command_list_t *list)
  ******************************************/
 
 
+
+static char *dump_ELF32_header(FILE *input_file)
+{
+    ELF32_Header_t file_header;
+
+    if(read_ELF32_header(input_file, &file_header) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF32 file header.\n");
+        return NULL;
+    }
+
+    return stringify_ELF32_header(&file_header);
+}
+
+
+
+static char *dump_ELF64_header(FILE *input_file)
+{
+    ELF64_Header_t file_header;
+
+    if(read_ELF64_header(input_file, &file_header) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF64 file header.\n");
+        return NULL;
+    }
+
+    return stringify_ELF64_header(&file_header);
+}
+
+
 int dump_elf_header(FILE *input_file)
 {
-    ELF32_Header_t header_32;
-    ELF64_Header_t header_64;
-
     char *output_string;
-
-
     int file_class = get_file_class(input_file);
+
 
     switch (file_class)
     {
     case ELFCLASS32:
-        read_ELF32_header(input_file, &header_32);
-        output_string = stringify_ELF32_header(&header_32);
+        output_string = dump_ELF32_header(input_file);
         break;
     
     case ELFCLASS64:
-        read_ELF64_header(input_file, &header_64);
-        output_string = stringify_ELF64_header(&header_64);
+        output_string = dump_ELF64_header(input_file);
         break;
 
     default:
         printf("ELF file has no class.\n");
-        return -1;
+        return RET_NOT_OK;
         break;
     }
 
-    fprintf(stdout, output_string);
+    if(output_string == NULL)
+    {
+        return RET_NOT_OK;
+    }
+
+
+    fputs(output_string, stdout);
     free(output_string);
 
-    return 0;
+    return RET_OK;
+}
+
+
+
+static char *dump_ELF32_section_headers(FILE *input_file)
+{
+    ELF32_Header_t file_header;
+    ELF32_Section_Header_t *section_header_table;
+    char *output_string;
+
+    if(read_ELF32_header(input_file, &file_header) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF32 section headers.\n");
+        return NULL;
+    }
+
+    // must dynamically allocate since we do not know beforehand how many section headers are in the table
+    section_header_table = (ELF32_Section_Header_t*) malloc(sizeof(ELF32_Section_Header_t)*file_header.e_shnum);
+
+    if(read_ELF32_section_header_table(input_file, section_header_table, file_header.e_shnum) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF32 section headers.\n");
+        return NULL;
+    }
+
+    output_string = stringify_ELF32_section_headers(section_header_table, file_header.e_shnum);
+    free(section_header_table);
+
+    return output_string;
+}
+
+
+static char *dump_ELF64_section_headers(FILE *input_file)
+{
+    ELF64_Header_t file_header;
+    ELF64_Section_Header_t *section_header_table;
+    char *output_string;
+
+    if(read_ELF64_header(input_file, &file_header) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF64 section header table.\n");
+        return NULL;
+    }
+
+    // must dynamically allocate since we do not know beforehand how many section headers are in the table
+    section_header_table = (ELF64_Section_Header_t*) malloc(sizeof(ELF64_Section_Header_t)*file_header.e_shnum);
+
+    if(read_ELF64_section_header_table(input_file, section_header_table, file_header.e_shnum) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF64 section header table.\n");
+        return NULL;
+    }
+
+    output_string = stringify_ELF64_section_headers(section_header_table, file_header.e_shnum);
+    free(section_header_table);
+
+    return output_string;
 }
 
 
 
 int dump_section_headers(FILE *input_file)
 {
-    ELF32_Header_t header_32;
-    ELF64_Header_t header_64;
-
-    ELF32_Section_Header_t *section_header_32;
-    ELF64_Section_Header_t *section_header_64;
-
     char *output_string;
-
     int file_class = get_file_class(input_file);
+
 
     switch (file_class)
     {
     case ELFCLASS32:
-        read_ELF32_header(input_file, &header_32);
-        section_header_32 = (ELF32_Section_Header_t*) malloc(sizeof(ELF32_Section_Header_t)*header_32.e_shnum);
-
-        read_ELF32_section_header_table(input_file, section_header_32, header_32.e_shnum);
-        output_string = stringify_ELF32_section_headers(section_header_32, header_32.e_shnum);
-
-        free(section_header_32);
+        output_string = dump_ELF32_section_headers(input_file);
         break;
     
     case ELFCLASS64:
-        read_ELF64_header(input_file, &header_64);
-        section_header_64 = (ELF64_Section_Header_t*) malloc(sizeof(ELF64_Section_Header_t)*header_64.e_shnum);
-
-        read_ELF64_section_header_table(input_file, section_header_64, header_64.e_shnum);
-        output_string = stringify_ELF64_section_headers(section_header_64, header_64.e_shnum);
-
-        free(section_header_64);
+        output_string = dump_ELF64_section_headers(input_file);
         break;
     
     default:
         printf("ELF file has no class.\n");
-        return -1;
+        return RET_NOT_OK;
         break;
     }
 
-    fprintf(stdout, output_string);
+    if(output_string == NULL)
+    {
+        return RET_NOT_OK;
+    }
+
+    fputs(output_string, stdout);
     free(output_string);
 
-    return 0;
+    return RET_OK;
+}
+
+
+
+static char *dump_ELF32_program_headers(FILE *input_file)
+{
+    ELF32_Header_t file_header;
+    ELF32_Program_Header_t *program_header_table;
+    char *output_string;
+
+    if(read_ELF32_header(input_file, &file_header) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF32 program header table.\n");
+        return NULL;
+    }
+
+    // must dynamically allocate since we do not know beforehand how many program headers are in the table
+    program_header_table = (ELF32_Program_Header_t*) malloc(sizeof(ELF32_Program_Header_t)*file_header.e_phnum);
+
+    if(read_ELF32_program_header_table(input_file, program_header_table, file_header.e_phnum) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF32 program header table.\n");
+        return NULL;
+    }
+
+    output_string = stringify_ELF32_program_headers(program_header_table, file_header.e_phnum);
+    free(program_header_table);
+
+    return output_string;
+}
+
+
+static char *dump_ELF64_program_headers(FILE *input_file)
+{
+    ELF64_Header_t file_header;
+    ELF64_Program_Header_t *program_header_table;
+    char *output_string;
+
+    if(read_ELF64_header(input_file, &file_header) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF64 program header table.\n");
+        return NULL;
+    }
+
+    // must dynamically allocate since we do not know beforehand how many program headers are in the table
+    program_header_table = (ELF64_Program_Header_t*) malloc(sizeof(ELF64_Program_Header_t)*file_header.e_phnum);
+
+    if(read_ELF64_program_header_table(input_file, program_header_table, file_header.e_phnum) != RET_OK)
+    {
+        fprintf(stderr, "Unable to read ELF64 program header table.\n");
+        return NULL;
+    }
+
+    output_string = stringify_ELF64_program_headers(program_header_table, file_header.e_phnum);
+    free(program_header_table);
+
+    return output_string;
 }
 
 
 
 int dump_program_headers(FILE *input_file)
 {
-    ELF32_Header_t header_32;
-    ELF64_Header_t header_64;
-
-    ELF32_Program_Header_t *program_header_32;
-    ELF64_Program_Header_t *program_header_64;
-
     char *output_string;
-
     int file_class = get_file_class(input_file);
+
 
     switch(file_class)
     {
         case ELFCLASS32:
-            read_ELF32_header(input_file, &header_32);
-            program_header_32 = (ELF32_Program_Header_t*) malloc(sizeof(ELF32_Program_Header_t)*header_32.e_phnum);
-
-            read_ELF32_program_header_table(input_file, program_header_32, header_32.e_phnum);
-            output_string = stringify_ELF32_program_headers(program_header_32, header_32.e_phnum);
-
-            free(program_header_32);
+            output_string = dump_ELF32_program_headers(input_file);
             break;
         
         case ELFCLASS64:
-            read_ELF64_header(input_file, &header_64);
-            program_header_64 = (ELF64_Program_Header_t*) malloc(sizeof(ELF64_Program_Header_t)*header_64.e_phnum);
-
-            read_ELF64_program_header_table(input_file, program_header_64, header_64.e_phnum);
-            output_string = stringify_ELF64_program_headers(program_header_64, header_64.e_phnum);
-
-            free(program_header_64);
+            output_string = dump_ELF64_program_headers(input_file);
             break;
         
         default:
             printf("ELF file has no class.\n");
-            return -1;
+            return RET_NOT_OK;
             break;
     }
 
-    fprintf(stdout, output_string);
+    if(output_string == NULL)
+    {
+        return RET_NOT_OK;
+    }
+
+    fputs(output_string, stdout);
     free(output_string);
 
-    return 0;
+    return RET_OK;
 }
 
 
@@ -243,7 +363,7 @@ int dump_program_headers(FILE *input_file)
 int dump_symbol_table(FILE *input_file)
 {
     fprintf(stderr, "TODO: Dump the symbol table.\n");
-    return -1;
+    return RET_NOT_OK;
 }
 
 
@@ -251,7 +371,7 @@ int dump_symbol_table(FILE *input_file)
 int dump_relocation_info(FILE *input_file)
 {
     fprintf(stderr, "TODO: Dump the relocation info.\n");
-    return -1;
+    return RET_NOT_OK;
 }
 
 
@@ -259,7 +379,7 @@ int dump_relocation_info(FILE *input_file)
 int hex_dump_section(FILE *input_file, int section_number, char *section_name)
 {
     fprintf(stderr, "TODO: Hex dump a particular section.\n");
-    return -1;
+    return RET_NOT_OK;
 }
 
 
@@ -267,7 +387,7 @@ int hex_dump_section(FILE *input_file, int section_number, char *section_name)
 int string_dump_section(FILE *input_file, int section_number, char *section_name)
 {
     fprintf(stderr, "TODO: String dump a particular section.\n");
-    return -1;
+    return RET_NOT_OK;
 }
 
 
@@ -275,6 +395,6 @@ int string_dump_section(FILE *input_file, int section_number, char *section_name
 int dump_debug_info(FILE *input_file, debug_command_subtype subtype)
 {
     fprintf(stderr, "TODO: Dump a section of debugging symbols.\n");
-    return -1;
+    return RET_NOT_OK;
 }
 

@@ -15,7 +15,8 @@
 #include "elf.h"
 
 
-#define RET_OK     0
+#define RET_OK          0
+#define RET_NOT_OK      -1
 
 
 int read_ELF_identification(FILE *input_file, unsigned char *buffer);
@@ -28,7 +29,6 @@ int read_ELF32_section_header(FILE *input_file, ELF32_Section_Header_t *header, 
 int read_ELF32_section_header_table(FILE *input_file, ELF32_Section_Header_t *header_table, int num_sections);
 int read_ELF32_program_header(FILE *input_file, ELF32_Program_Header_t *header, int index);
 int read_ELF32_program_header_table(FILE *input_file, ELF32_Program_Header_t *header_table, int num_segments);
-//int read_ELF32_symbol_table(FILE *input_file, ELF32_Sym_t *symbol_table, )
 
 
 
