@@ -21,6 +21,10 @@
 
 
 
+#define MAX_FILENAME_LENGTH     1024
+
+
+
 void finish_up_and_free_things()
 {
     // free pointers that are dynamically allocated
@@ -257,7 +261,9 @@ int parse_command_line_options(int argc, char *argv[], command_list_t *commands,
         {
             // any command-line argument without a begining '-'
             // is interpreted as a filename
-            filename = argv[i];
+            
+            strcpy(filename, argv[i]);
+            free(new_command);
         }
 
         else
@@ -288,7 +294,7 @@ int main(int argc, char *argv[])
 {
     // file name and file pointer to
     // the specified file
-    char *filename = NULL;
+    char filename[MAX_FILENAME_LENGTH];
     FILE *file_handle = NULL;
 
 

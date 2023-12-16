@@ -52,15 +52,29 @@ int get_file_class(FILE *input_file)
 
 int read_ELF32_header(FILE *input_file, ELF32_Header_t *header)
 {
-    fprintf(stderr, "TODO: Implement reading ELF32 file header.\n");
-    return RET_NOT_OK;
+    // jump to the beginning of the file where the ELF header is
+    fseek(input_file, 0, SEEK_SET);
+
+    if(fread(header, sizeof(ELF32_Header_t), 1, input_file) != 1)
+    {
+        return RET_NOT_OK;
+    }
+    
+    return RET_OK;
 }
 
 
 int read_ELF64_header(FILE *input_file, ELF64_Header_t *header)
 {
-    fprintf(stderr, "TODO: Implement reading ELF64 file header.\n");
-    return RET_NOT_OK;
+    // jump to the beginning of the file where the ELF header is
+    fseek(input_file, 0, SEEK_SET);
+
+    if(fread(header, sizeof(ELF64_Header_t), 1, input_file) != 1)
+    {
+        return RET_NOT_OK;
+    }
+
+    return RET_OK;
 }
 
 
