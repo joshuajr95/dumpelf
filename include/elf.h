@@ -1349,6 +1349,12 @@ typedef struct
 
 
     /*
+     * Defines relevant flags for the segment.
+     */
+    ELF64_Word_t p_flags;
+
+
+    /*
      * This member gives the offset from the beginning of the
      * file at which the first byte of the segment resides.
      */
@@ -1383,12 +1389,6 @@ typedef struct
      * to p_filesz.
      */
     ELF64_Xword_t p_memsz;
-
-
-    /*
-     * Defines relevant flags for the segment.
-     */
-    ELF64_Word_t p_flags;
 
 
     /*

@@ -176,6 +176,8 @@ int dump_elf_header(FILE *input_file)
 
 
 
+
+
 static char *dump_ELF32_section_headers(FILE *input_file)
 {
     ELF32_Header_t file_header;
