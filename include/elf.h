@@ -467,6 +467,8 @@ typedef struct
 #define EM_MIPS         8           // MIPS RS3000 Big-Endian
 #define EM_MIPS_RS4_BE  10          // MIPS RS4000 Big-Endian
 
+#define EM_X86_64       62          // X86 64-bit architecture
+
 
 
 

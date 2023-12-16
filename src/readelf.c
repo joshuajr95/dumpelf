@@ -81,7 +81,7 @@ int read_ELF64_header(FILE *input_file, ELF64_Header_t *header)
 int read_ELF32_section_header_table(FILE *input_file, ELF32_Section_Header_t *header_table, int num_sections)
 {
     fprintf(stderr, "TODO: Implement reading ELF32 section header table.\n");
-    return RET_NOT_OK;
+    return RET_NOT_OK;  
 }
 
 
