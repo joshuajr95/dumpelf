@@ -36,12 +36,13 @@
 
 
 char *stringify_ELF32_header(ELF32_Header_t *elf_header);
-char *stringify_ELF32_section_headers(ELF32_Section_Header_t *section_header_table, int num_sections);
-char *stringify_ELF32_program_headers(ELF32_Program_Header_t *program_header_table, int num_segments);
+char *stringify_ELF32_section_header_table(ELF32_Section_Header_t *section_header_table, ELF32_Header_t *file_header, char **section_header_names);
+char *stringify_ELF32_program_header_table(ELF32_Program_Header_t *program_header_table, ELF32_Header_t *file_header);
+
 
 
 char *stringify_ELF64_header(ELF64_Header_t *elf_header);
-char *stringify_ELF64_section_headers(ELF64_Section_Header_t *section_header_table, int num_sections);
-char *stringify_ELF64_program_headers(ELF64_Program_Header_t *program_header_table, int num_segments);
+char *stringify_ELF64_section_header_table(ELF64_Section_Header_t *section_header_table, ELF64_Header_t *file_header, char **section_header_names);
+char *stringify_ELF64_program_header_table(ELF64_Program_Header_t *program_header_table, ELF64_Header_t *file_header);
 
 #endif

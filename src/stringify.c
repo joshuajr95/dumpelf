@@ -263,7 +263,7 @@ char *stringify_ELF32_header(ELF32_Header_t *elf_header)
 
     // add the entry point address to the output string
     CONCATENATE_DYNAMIC_STRING(output_string, entry, max_size, current_size);
-    sprintf(buffer, "%x\n", elf_header->e_entry);
+    sprintf(buffer, "0x%x\n", elf_header->e_entry);
     CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
 
 
@@ -281,7 +281,7 @@ char *stringify_ELF32_header(ELF32_Header_t *elf_header)
     
     // add flags to the output string
     CONCATENATE_DYNAMIC_STRING(output_string, flags, max_size, current_size);
-    sprintf(buffer, "%x\n", elf_header->e_flags);
+    sprintf(buffer, "0x%x\n", elf_header->e_flags);
     CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
 
 
@@ -325,14 +325,14 @@ char *stringify_ELF32_header(ELF32_Header_t *elf_header)
 }
 
 
-char *stringify_ELF32_section_headers(ELF32_Section_Header_t *section_header_table, int num_sections)
+char *stringify_ELF32_section_header_table(ELF32_Section_Header_t *section_header_table, ELF32_Header_t *file_header, char **section_header_names)
 {
     fprintf(stderr, "TODO: Implement stringification of 32-bit ELF section header table.\n");
     return NULL;
 }
 
 
-char *stringify_ELF32_program_headers(ELF32_Program_Header_t *program_header_table, int num_segments)
+char *stringify_ELF32_program_header_table(ELF32_Program_Header_t *program_header_table, ELF32_Header_t *file_header)
 {
     fprintf(stderr, "TODO: Implement stringification of 32-bit ELF program header table.\n");
     return NULL;
@@ -590,7 +590,7 @@ char *stringify_ELF64_header(ELF64_Header_t *elf_header)
 
     // add the entry point address to the output string
     CONCATENATE_DYNAMIC_STRING(output_string, entry, max_size, current_size);
-    sprintf(buffer, "%lx\n", elf_header->e_entry);
+    sprintf(buffer, "0x%lx\n", elf_header->e_entry);
     CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
 
 
@@ -608,7 +608,7 @@ char *stringify_ELF64_header(ELF64_Header_t *elf_header)
     
     // add flags to the output string
     CONCATENATE_DYNAMIC_STRING(output_string, flags, max_size, current_size);
-    sprintf(buffer, "%x\n", elf_header->e_flags);
+    sprintf(buffer, "0x%x\n", elf_header->e_flags);
     CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
 
 
@@ -652,14 +652,93 @@ char *stringify_ELF64_header(ELF64_Header_t *elf_header)
 }
 
 
-char *stringify_ELF64_section_headers(ELF64_Section_Header_t *section_header_table, int num_sections)
+
+static void stringify_ELF64_section_header(char *buffer, ELF64_Section_Header_t *section_header_table, int section_number, char *section_name)
 {
-    fprintf(stderr, "TODO: Implement stringification of 64-bit ELF section header table.\n");
-    return NULL;
+    sprintf(buffer, "Section number %d is not being printed until I can figure out the string table.\n", section_number);
 }
 
 
-char *stringify_ELF64_program_headers(ELF64_Program_Header_t *program_header_table, int num_segments)
+
+
+/*
+ * Turns the section header table into a character string to be printed to the screen.
+ * A pointer to the section header table array is passed so the function can read the
+ * data from it, as well as a pointer to the ELF file header, which holds the number
+ * of sections in the section header table, as well as the offset to the section header
+ * table. The section header names need to be passed in separately since they reside
+ * in the string table and this function does not have access to the string table. The
+ * section header names list is terminated with a NULL pointer to signify the end of
+ * the list.
+ */
+char *stringify_ELF64_section_header_table(ELF64_Section_Header_t *section_header_table, ELF64_Header_t *file_header, char **section_header_names)
+{
+
+    /*
+     * Defensive check to prevent segmentation
+     * fault from NULL pointer being passed.
+     */
+    if(section_header_table == NULL || file_header == NULL)
+    {
+        fprintf(stderr, "NULL pointer passed to stringify_ELF64_section_header_table.\n");
+        return NULL;
+    }
+
+
+    /*
+     * Temporary buffer to store strings before they
+     * are concatenated onto the output string.
+     */
+    char buffer[1024];
+
+
+    /*
+     * For creating output string need to dynamically allocate
+     * memory. However, the ELF header string is continually
+     * growing, so there is a need to allocate enough memory
+     * and then some for the current size of the string. Thus,
+     * max_size gives the size allocated, and current_size gives
+     * the current size of the string, i.e. current_size is how
+     * much of the buffer of max_size is actually taken up by
+     * the string. When adding new text to the string causes
+     * current_size to become greater than max_size, then the
+     * string must be reallocated.
+     */
+    int max_size = 64, current_size = 0;
+
+
+    // allocate an initial buffer of 64 bytes
+    char *output_string = (char*) malloc(max_size*sizeof(char));
+
+
+    // add the number of section headers and the offset to the output
+    sprintf(buffer, "There are %d section headers, starting at offset 0x%lx\n\n", file_header->e_shnum, file_header->e_shoff);
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+
+    // add the title to the output
+    sprintf(buffer, "Section Headers:\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+
+    // add the headers of the table to be printed for the section headers
+    sprintf(buffer, "[Number]\tName\t\tType\t\tAddress\t\tOffset\t\tSize\tEntSize\tFlags\tLink\tInfo\tAlign\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+
+    // for each section header add the section header data 
+    for(int i = 0; i < file_header->e_shnum; i++)
+    {
+        stringify_ELF64_section_header(buffer, section_header_table, i, section_header_names[i]);
+        CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+    }
+
+
+    return output_string;
+}
+
+
+char *stringify_ELF64_program_header_table(ELF64_Program_Header_t *program_header_table, ELF64_Header_t *file_header)
 {
     fprintf(stderr, "TODO: Implement stringification of 64-bit ELF program header table.\n");
     return NULL;

@@ -182,25 +182,61 @@ static char *dump_ELF32_section_headers(FILE *input_file)
 {
     ELF32_Header_t file_header;
     ELF32_Section_Header_t *section_header_table;
+    char **section_names;
     char *output_string;
 
+
+    /*
+     * Get the ELF file header which is needed by
+     * the stringify function.
+     */
     if(read_ELF32_header(input_file, &file_header) != RET_OK)
     {
         fprintf(stderr, "Unable to read ELF32 section headers.\n");
         return NULL;
     }
 
-    // must dynamically allocate since we do not know beforehand how many section headers are in the table
-    section_header_table = (ELF32_Section_Header_t*) malloc(sizeof(ELF32_Section_Header_t)*file_header.e_shnum);
 
-    if(read_ELF32_section_header_table(input_file, section_header_table, file_header.e_shnum) != RET_OK)
+    /*
+     * Read the section header table from the ELF
+     * file and return pointer to heap-allocated
+     * memory containing the section header table.
+     */
+    if((section_header_table = read_ELF32_section_header_table(input_file)) == NULL)
     {
         fprintf(stderr, "Unable to read ELF32 section headers.\n");
         return NULL;
     }
 
-    output_string = stringify_ELF32_section_headers(section_header_table, file_header.e_shnum);
+
+    /*
+     * Get the section names from the section header
+     * string table, since they are not stored in
+     * the section header table themselves.
+     */
+    if((section_names = get_section_names(input_file)) == NULL)
+    {
+        fprintf(stderr, "Unable to find section names.\n");
+        free(section_header_table);
+        return NULL;
+    }
+
+
+    /*
+     * Stringify the section headers. Output string
+     * will be printed to user.
+     */
+    output_string = stringify_ELF32_section_header_table(section_header_table, &file_header, section_names);
+    
+
+    // free dynamically-allocated memory
     free(section_header_table);
+    for(int i = 0; section_names[i] != NULL; i++)
+    {
+        free(section_names[i]);
+    }
+    free(section_names);
+
 
     return output_string;
 }
@@ -211,24 +247,60 @@ static char *dump_ELF64_section_headers(FILE *input_file)
     ELF64_Header_t file_header;
     ELF64_Section_Header_t *section_header_table;
     char *output_string;
+    char **section_names;
 
+
+    /*
+     * Get the ELF file header which is needed by
+     * the stringify function.
+     */
     if(read_ELF64_header(input_file, &file_header) != RET_OK)
     {
         fprintf(stderr, "Unable to read ELF64 section header table.\n");
         return NULL;
     }
 
-    // must dynamically allocate since we do not know beforehand how many section headers are in the table
-    section_header_table = (ELF64_Section_Header_t*) malloc(sizeof(ELF64_Section_Header_t)*file_header.e_shnum);
 
-    if(read_ELF64_section_header_table(input_file, section_header_table, file_header.e_shnum) != RET_OK)
+    /*
+     * Read the section header table from the ELF
+     * file and return pointer to heap-allocated
+     * memory containing the section header table.
+     */
+    if((section_header_table = read_ELF64_section_header_table(input_file)) == NULL)
     {
         fprintf(stderr, "Unable to read ELF64 section header table.\n");
         return NULL;
     }
 
-    output_string = stringify_ELF64_section_headers(section_header_table, file_header.e_shnum);
+
+    /*
+     * Get the section names from the section header
+     * string table, since they are not stored in
+     * the section header table themselves.
+     */
+    if((section_names = get_section_names(input_file)) == NULL)
+    {
+        fprintf(stderr, "Unable to get section names.\n");
+        free(section_header_table);
+        return NULL;
+    }
+
+
+    /*
+     * Stringify the section headers. Output string
+     * will be printed to user.
+     */
+    output_string = stringify_ELF64_section_header_table(section_header_table, &file_header, section_names);
+
+
+    // free dynamically allocated memory
     free(section_header_table);
+    for(int i = 0; section_names[i] != NULL; i++)
+    {
+        free(section_names[i]);
+    }
+    free(section_names);
+
 
     return output_string;
 }
@@ -241,6 +313,14 @@ int dump_section_headers(FILE *input_file)
     int file_class = get_file_class(input_file);
 
 
+    /*
+     * Since the data structures for 32-bit
+     * and 64-bit ELF files differ slightly
+     * there are different handler functions
+     * for the two different classes of ELF
+     * file. The handler functions are almost
+     * identical except for 32-bit vs. 64-bit.
+     */
     switch (file_class)
     {
     case ELFCLASS32:
@@ -257,11 +337,21 @@ int dump_section_headers(FILE *input_file)
         break;
     }
 
+
+    /*
+     * The handler functions will return
+     * a NULL pointer on failure.
+     */
     if(output_string == NULL)
     {
         return RET_NOT_OK;
     }
 
+
+    /*
+     * Print to screen and free the
+     * output string.
+     */
     fputs(output_string, stdout);
     free(output_string);
 
@@ -276,22 +366,34 @@ static char *dump_ELF32_program_headers(FILE *input_file)
     ELF32_Program_Header_t *program_header_table;
     char *output_string;
 
+
+    /*
+     * Get the ELF file header which is needed by
+     * the stringify function.
+     */
     if(read_ELF32_header(input_file, &file_header) != RET_OK)
     {
         fprintf(stderr, "Unable to read ELF32 program header table.\n");
         return NULL;
     }
 
-    // must dynamically allocate since we do not know beforehand how many program headers are in the table
-    program_header_table = (ELF32_Program_Header_t*) malloc(sizeof(ELF32_Program_Header_t)*file_header.e_phnum);
-
-    if(read_ELF32_program_header_table(input_file, program_header_table, file_header.e_phnum) != RET_OK)
+    
+    /*
+     * Read the program header table into a dynamically
+     * allocated array of program headers. 
+     */
+    if((program_header_table = read_ELF32_program_header_table(input_file)) == NULL)
     {
         fprintf(stderr, "Unable to read ELF32 program header table.\n");
         return NULL;
     }
 
-    output_string = stringify_ELF32_program_headers(program_header_table, file_header.e_phnum);
+
+    /*
+     * Stringify the program headers and free
+     * the dynamically-allocated memory.
+     */
+    output_string = stringify_ELF32_program_header_table(program_header_table, &file_header);
     free(program_header_table);
 
     return output_string;
@@ -304,22 +406,26 @@ static char *dump_ELF64_program_headers(FILE *input_file)
     ELF64_Program_Header_t *program_header_table;
     char *output_string;
 
+
+    /*
+     * Get the ELF file header which is needed by
+     * the stringify function.
+     */
     if(read_ELF64_header(input_file, &file_header) != RET_OK)
     {
         fprintf(stderr, "Unable to read ELF64 program header table.\n");
         return NULL;
     }
 
-    // must dynamically allocate since we do not know beforehand how many program headers are in the table
-    program_header_table = (ELF64_Program_Header_t*) malloc(sizeof(ELF64_Program_Header_t)*file_header.e_phnum);
 
-    if(read_ELF64_program_header_table(input_file, program_header_table, file_header.e_phnum) != RET_OK)
+    if((program_header_table = read_ELF64_program_header_table(input_file)) == NULL)
     {
         fprintf(stderr, "Unable to read ELF64 program header table.\n");
         return NULL;
     }
 
-    output_string = stringify_ELF64_program_headers(program_header_table, file_header.e_phnum);
+
+    output_string = stringify_ELF64_program_header_table(program_header_table, &file_header);
     free(program_header_table);
 
     return output_string;
