@@ -659,21 +659,21 @@ void stringify_ELF64_flags(char *flag_buffer, ELF64_Xword_t flags)
 {
     int current_index = 0;
 
-    if((flags >> SHF_WRITE) & 0x1)
+    if(flags & SHF_WRITE )
     {
         flag_buffer[current_index] = 'W';
         current_index++;
     }
 
-    if((flags >> SHF_ALLOC) & 0x1)
+    if((flags & SHF_ALLOC) >> 1)
     {
         flag_buffer[current_index] = 'A';
         current_index++;
     }
 
-    if((flags >> SHF_EXECINSTR) & 0x1)
+    if((flags & SHF_EXECINSTR) >> 2)
     {
-        flag_buffer[current_index] = 'E';
+        flag_buffer[current_index] = 'X';
         current_index++;
     }
 
@@ -827,6 +827,10 @@ char *stringify_ELF64_section_header_table(ELF64_Section_Header_t *section_heade
         stringify_ELF64_section_header(buffer, section_header_table, i, section_header_names[i], max_len);
         CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
     }
+
+
+    sprintf(buffer, "\nKey to flags:  (W) Write, (A) alloc, (X) execute.\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
 
 
     return output_string;
