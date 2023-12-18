@@ -81,7 +81,23 @@ int is_int(char *string)
  */
 void print_usage_message()
 {
-    // print the usage message
+    printf("Usage: dumpelf [OPTIONS] [FILENAME]\n");
+    printf("OPTIONS:\n");
+    printf("\t[-h | --file-header]\t\t\t\t\t\tDump ELF file header\n");
+    printf("\t[-S | --sections | --section-headers]\t\t\t\tDump section header table\n");
+    printf("\t[-l | --segments | --program-headers]\t\t\t\tDump program header table if it exists\n");
+    printf("\t[-e | --headers]\t\t\t\t\t\tDump all headers\n");
+    printf("\t[-s | --syms | --symbols]\t\t\t\t\tDump the symbol table(s)\n");
+    printf("\t[-r | --relocs]\t\t\t\t\t\t\tDump the relocation information\n");
+    printf("\t[--hex-dump=<section name or number>]\t\t\t\tHex dump a particular section\n");
+    printf("\t[--string-dump=<section name or number>]\t\t\tString dump a particular section\n");
+    printf("\t[--debug-dump=<abbrev, addr, frames, names, info, aranges>]\tDump debug info\n");
+    printf("\t\t<abbrev>\tDump contents of .debug_abbrev section\n");
+    printf("\t\t<addr>\t\tDump the contents of .debug_addr section\n");
+    printf("\t\t<frames>\tDump the contents of .debug_frame section\n");
+    printf("\t\t<names>\t\tDump the contents of .debug_names section\n");
+    printf("\t\t<info>\t\tDump the contents of .debug_info section\n");
+    printf("\t\t<aranges>\tDump the contents of .debug_aranges section\n");
 }
 
 
@@ -301,6 +317,9 @@ int main(int argc, char *argv[])
     command_list_t commands;
 
 
+    sprintf(filename, "None");
+
+
     /*
      * initialize the command list with size argc since the number
      * of command-line arguments gives an upper bound on the number
@@ -315,6 +334,13 @@ int main(int argc, char *argv[])
      */
     if(parse_command_line_options(argc, argv, &commands, filename) != RET_OK)
     {
+        return RET_NOT_OK;
+    }
+
+
+    if(strcmp(filename, "None") == 0)
+    {
+        print_usage_message();
         return RET_NOT_OK;
     }
 
@@ -363,6 +389,8 @@ int main(int argc, char *argv[])
                 break;
         }
     }
+
+    fclose(file_handle);
 
 
     return RET_OK;
