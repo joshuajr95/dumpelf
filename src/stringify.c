@@ -16,6 +16,8 @@
 
 
 
+
+
 /************************************
  * This section contains the 32-bit *
  * stringification routines.        *
@@ -653,9 +655,81 @@ char *stringify_ELF64_header(ELF64_Header_t *elf_header)
 
 
 
-static void stringify_ELF64_section_header(char *buffer, ELF64_Section_Header_t *section_header_table, int section_number, char *section_name)
+void stringify_ELF64_flags(char *flag_buffer, ELF64_Xword_t flags)
 {
-    sprintf(buffer, "Section number %d is not being printed until I can figure out the string table.\n", section_number);
+    int current_index = 0;
+
+    if((flags >> SHF_WRITE) & 0x1)
+    {
+        flag_buffer[current_index] = 'W';
+        current_index++;
+    }
+
+    if((flags >> SHF_ALLOC) & 0x1)
+    {
+        flag_buffer[current_index] = 'A';
+        current_index++;
+    }
+
+    if((flags >> SHF_EXECINSTR) & 0x1)
+    {
+        flag_buffer[current_index] = 'E';
+        current_index++;
+    }
+
+    flag_buffer[current_index] = '\0';
+}
+
+
+
+static void stringify_ELF64_section_header(char *buffer, ELF64_Section_Header_t *section_header_table, int section_number, char *section_name, int max_len)
+{
+    char *section_types[] = {
+        [SHT_NULL] = "NULL",
+        [SHT_PROGBITS] = "PROGBITS",
+        [SHT_SYMTAB] = "SYMTAB",
+        [SHT_STRTAB] = "STRTAB",
+        [SHT_RELA] = "RELA",
+        [SHT_HASH] = "HASH",
+        [SHT_DYNAMIC] = "DYNAMIC",
+        [SHT_NOTE] = "NOTE",
+        [SHT_NOBITS] = "NOBITS",
+        [SHT_REL] = "REL",
+        [SHT_SHLIB] = "SHLIB",
+        [SHT_DYNSYM] = "DYNSYM"
+    };
+
+
+    ELF64_Section_Header_t section_header = section_header_table[section_number];
+
+    char buf[256];
+    sprintf(buf, " ");
+
+    int num_spaces = max_len - strlen(section_name) + 5;
+    for(int i = 1; i < num_spaces; i++)
+    {
+        strcat(buf, " ");
+    }
+
+
+    char flags[16];
+
+    stringify_ELF64_flags(flags, section_header.sh_flags);
+
+
+    sprintf(buffer, "[  %d]\t\t%s%s%s\t\t%016lx\t%08lx\t%016lx\t%016lx\t%s\t%d\t%d\t%lu\n",
+                section_number,
+                section_name,
+                buf,
+                section_types[section_header.sh_type],
+                section_header.sh_addr,
+                section_header.sh_offset,
+                section_header.sh_size,
+                section_header.sh_entsize,
+                flags,
+                section_header.sh_link,
+                section_header.sh_info,
+                section_header.sh_addralign);
 }
 
 
@@ -721,15 +795,36 @@ char *stringify_ELF64_section_header_table(ELF64_Section_Header_t *section_heade
     CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
 
 
+    int max_len = 0;
+    // get the length of the section header names
+    for(int i = 0; i < file_header->e_shnum; i++)
+    {        
+        if(strlen(section_header_names[i]) > max_len)
+            max_len = strlen(section_header_names[i]);
+    }
+    
+    
+    char buf[256];
+    sprintf(buf, " ");
+
+    int num_spaces = max_len - strlen("Name") + 5;
+    for(int i = 1; i < num_spaces; i++)
+    {
+        strcat(buf, " ");
+    }
+
+
     // add the headers of the table to be printed for the section headers
-    sprintf(buffer, "[Number]\tName\t\tType\t\tAddress\t\tOffset\t\tSize\tEntSize\tFlags\tLink\tInfo\tAlign\n");
+    sprintf(buffer, "[Number]\tName%sType\t\tAddress\t\t\tOffset\t\tSize\t\t\tEntSize\t\t\tFlags\tLink\tInfo\tAlign\n", buf);
     CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
 
+
+    
 
     // for each section header add the section header data 
     for(int i = 0; i < file_header->e_shnum; i++)
     {
-        stringify_ELF64_section_header(buffer, section_header_table, i, section_header_names[i]);
+        stringify_ELF64_section_header(buffer, section_header_table, i, section_header_names[i], max_len);
         CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
     }
 

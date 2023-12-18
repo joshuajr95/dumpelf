@@ -81,23 +81,23 @@ int is_int(char *string)
  */
 void print_usage_message()
 {
-    printf("Usage: dumpelf [OPTIONS] [FILENAME]\n");
-    printf("OPTIONS:\n");
-    printf("\t[-h | --file-header]\t\t\t\t\t\tDump ELF file header\n");
-    printf("\t[-S | --sections | --section-headers]\t\t\t\tDump section header table\n");
-    printf("\t[-l | --segments | --program-headers]\t\t\t\tDump program header table if it exists\n");
-    printf("\t[-e | --headers]\t\t\t\t\t\tDump all headers\n");
-    printf("\t[-s | --syms | --symbols]\t\t\t\t\tDump the symbol table(s)\n");
-    printf("\t[-r | --relocs]\t\t\t\t\t\t\tDump the relocation information\n");
-    printf("\t[--hex-dump=<section name or number>]\t\t\t\tHex dump a particular section\n");
-    printf("\t[--string-dump=<section name or number>]\t\t\tString dump a particular section\n");
-    printf("\t[--debug-dump=<abbrev, addr, frames, names, info, aranges>]\tDump debug info\n");
-    printf("\t\t<abbrev>\tDump contents of .debug_abbrev section\n");
-    printf("\t\t<addr>\t\tDump the contents of .debug_addr section\n");
-    printf("\t\t<frames>\tDump the contents of .debug_frame section\n");
-    printf("\t\t<names>\t\tDump the contents of .debug_names section\n");
-    printf("\t\t<info>\t\tDump the contents of .debug_info section\n");
-    printf("\t\t<aranges>\tDump the contents of .debug_aranges section\n");
+    fprintf(stderr, "Usage: dumpelf [OPTIONS] [FILENAME]\n");
+    fprintf(stderr, "OPTIONS:\n");
+    fprintf(stderr, "\t[-h | --file-header]\t\t\t\t\t\tDump ELF file header\n");
+    fprintf(stderr, "\t[-S | --sections | --section-headers]\t\t\t\tDump section header table\n");
+    fprintf(stderr, "\t[-l | --segments | --program-headers]\t\t\t\tDump program header table if it exists\n");
+    fprintf(stderr, "\t[-e | --headers]\t\t\t\t\t\tDump all headers\n");
+    fprintf(stderr, "\t[-s | --syms | --symbols]\t\t\t\t\tDump the symbol table(s)\n");
+    fprintf(stderr, "\t[-r | --relocs]\t\t\t\t\t\t\tDump the relocation information\n");
+    fprintf(stderr, "\t[--hex-dump=<section name or number>]\t\t\t\tHex dump a particular section\n");
+    fprintf(stderr, "\t[--string-dump=<section name or number>]\t\t\tString dump a particular section\n");
+    fprintf(stderr, "\t[--debug-dump=<abbrev, addr, frames, names, info, aranges>]\tDump debug info\n\n");
+    fprintf(stderr, "\t\t<abbrev>\tDump contents of .debug_abbrev section\n");
+    fprintf(stderr, "\t\t<addr>\t\tDump the contents of .debug_addr section\n");
+    fprintf(stderr, "\t\t<frames>\tDump the contents of .debug_frame section\n");
+    fprintf(stderr, "\t\t<names>\t\tDump the contents of .debug_names section\n");
+    fprintf(stderr, "\t\t<info>\t\tDump the contents of .debug_info section\n");
+    fprintf(stderr, "\t\t<aranges>\tDump the contents of .debug_aranges section\n");
 }
 
 
@@ -340,6 +340,7 @@ int main(int argc, char *argv[])
 
     if(strcmp(filename, "None") == 0)
     {
+        fprintf(stderr, "No file name given.\n");
         print_usage_message();
         return RET_NOT_OK;
     }
@@ -349,6 +350,13 @@ int main(int argc, char *argv[])
     if((file_handle = fopen(filename, "r")) == NULL)
     {
         printf("%s\n", strerror(errno));
+        return RET_NOT_OK;
+    }
+
+    if(commands.num_commands == 0)
+    {
+        fprintf(stderr, "No options specified.\n\n");
+        print_usage_message();
         return RET_NOT_OK;
     }
 
