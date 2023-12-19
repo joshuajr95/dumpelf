@@ -334,7 +334,7 @@ char *stringify_ELF32_section_header_table(ELF32_Section_Header_t *section_heade
 }
 
 
-char *stringify_ELF32_program_header_table(ELF32_Program_Header_t *program_header_table, ELF32_Header_t *file_header)
+char *stringify_ELF32_program_header_table(ELF32_Program_Header_t *program_header_table, ELF32_Header_t *file_header, char ***section_to_segment_mapping)
 {
     fprintf(stderr, "TODO: Implement stringification of 32-bit ELF program header table.\n");
     return NULL;
@@ -837,7 +837,7 @@ char *stringify_ELF64_section_header_table(ELF64_Section_Header_t *section_heade
 }
 
 
-char *stringify_ELF64_program_header_table(ELF64_Program_Header_t *program_header_table, ELF64_Header_t *file_header)
+char *stringify_ELF64_program_header_table(ELF64_Program_Header_t *program_header_table, ELF64_Header_t *file_header, char ***section_to_segment_mapping)
 {
     fprintf(stderr, "TODO: Implement stringification of 64-bit ELF program header table.\n");
     return NULL;

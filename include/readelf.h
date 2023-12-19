@@ -45,4 +45,7 @@ ELF64_Program_Header_t *read_ELF64_program_header_table(FILE *input_file);
 
 
 
+char ***get_section_to_segment_mapping(FILE *input_file);
+
+
 #endif

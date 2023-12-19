@@ -367,6 +367,9 @@ static char *dump_ELF32_program_headers(FILE *input_file)
     char *output_string;
 
 
+    char ***section_to_segment_mapping;
+
+
     /*
      * Get the ELF file header which is needed by
      * the stringify function.
@@ -389,15 +392,19 @@ static char *dump_ELF32_program_headers(FILE *input_file)
     }
 
 
+    section_to_segment_mapping = get_section_to_segment_mapping(input_file);
+
+
     /*
      * Stringify the program headers and free
      * the dynamically-allocated memory.
      */
-    output_string = stringify_ELF32_program_header_table(program_header_table, &file_header);
+    output_string = stringify_ELF32_program_header_table(program_header_table, &file_header, section_to_segment_mapping);
     free(program_header_table);
 
     return output_string;
 }
+
 
 
 static char *dump_ELF64_program_headers(FILE *input_file)
@@ -405,6 +412,9 @@ static char *dump_ELF64_program_headers(FILE *input_file)
     ELF64_Header_t file_header;
     ELF64_Program_Header_t *program_header_table;
     char *output_string;
+    
+    
+    char ***section_to_segment_mapping;
 
 
     /*
@@ -425,7 +435,13 @@ static char *dump_ELF64_program_headers(FILE *input_file)
     }
 
 
-    output_string = stringify_ELF64_program_header_table(program_header_table, &file_header);
+    /*
+     * Get the section to segment mapping 
+     */
+    section_to_segment_mapping = get_section_to_segment_mapping(input_file);
+
+
+    output_string = stringify_ELF64_program_header_table(program_header_table, &file_header, section_to_segment_mapping);
     free(program_header_table);
 
     return output_string;
