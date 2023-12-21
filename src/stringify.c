@@ -18,6 +18,40 @@
 
 
 
+static char *section_types[] = {
+    [SHT_NULL] = "NULL",
+    [SHT_PROGBITS] = "PROGBITS",
+    [SHT_SYMTAB] = "SYMTAB",
+    [SHT_STRTAB] = "STRTAB",
+    [SHT_RELA] = "RELA",
+    [SHT_HASH] = "HASH",
+    [SHT_DYNAMIC] = "DYNAMIC",
+    [SHT_NOTE] = "NOTE",
+    [SHT_NOBITS] = "NOBITS",
+    [SHT_REL] = "REL",
+    [SHT_SHLIB] = "SHLIB",
+    [SHT_DYNSYM] = "DYNSYM"
+};
+
+
+
+/*
+ * Segment types
+ */
+static char *segment_types[] = {
+    [PT_NULL] = "NULL",
+    [PT_LOAD] = "LOAD",
+    [PT_DYNAMIC] = "DYNAMIC",
+    [PT_INTERP] = "INTERP",
+    [PT_NOTE] = "NOTE",
+    [PT_SHLIB] = "SHLIB",
+    [PT_PHDR] = "PHDR"
+};
+
+
+
+
+
 /************************************
  * This section contains the 32-bit *
  * stringification routines.        *
@@ -684,21 +718,6 @@ void stringify_ELF64_flags(char *flag_buffer, ELF64_Xword_t flags)
 
 static void stringify_ELF64_section_header(char *buffer, ELF64_Section_Header_t *section_header_table, int section_number, char *section_name, int max_len)
 {
-    char *section_types[] = {
-        [SHT_NULL] = "NULL",
-        [SHT_PROGBITS] = "PROGBITS",
-        [SHT_SYMTAB] = "SYMTAB",
-        [SHT_STRTAB] = "STRTAB",
-        [SHT_RELA] = "RELA",
-        [SHT_HASH] = "HASH",
-        [SHT_DYNAMIC] = "DYNAMIC",
-        [SHT_NOTE] = "NOTE",
-        [SHT_NOBITS] = "NOBITS",
-        [SHT_REL] = "REL",
-        [SHT_SHLIB] = "SHLIB",
-        [SHT_DYNSYM] = "DYNSYM"
-    };
-
 
     ELF64_Section_Header_t section_header = section_header_table[section_number];
 
@@ -717,11 +736,14 @@ static void stringify_ELF64_section_header(char *buffer, ELF64_Section_Header_t 
     stringify_ELF64_flags(flags, section_header.sh_flags);
 
 
+    char *section_type = (section_header.sh_type <= SHT_DYNSYM) ? section_types[section_header.sh_type] : "UNKNOWN";
+
+
     sprintf(buffer, "[  %d]\t\t%s%s%s\t\t%016lx\t%08lx\t%016lx\t%016lx\t%s\t%d\t%d\t%lu\n",
                 section_number,
                 section_name,
                 buf,
-                section_types[section_header.sh_type],
+                section_type,
                 section_header.sh_addr,
                 section_header.sh_offset,
                 section_header.sh_size,
@@ -819,6 +841,8 @@ char *stringify_ELF64_section_header_table(ELF64_Section_Header_t *section_heade
     CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
 
 
+    sprintf(buffer, "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
     
 
     // for each section header add the section header data 
@@ -837,10 +861,142 @@ char *stringify_ELF64_section_header_table(ELF64_Section_Header_t *section_heade
 }
 
 
+
+
+static void stringify_ELF64_program_header(char *buffer, ELF64_Program_Header_t *program_header_table, int index)
+{
+    ELF64_Program_Header_t program_header = program_header_table[index];
+
+
+
+    /*
+     * Some types are very large, i.e. 0xffff0000.
+     * Thus need to check for out-of-bounds indexing
+     * to prevent bus error or segmentation fault.
+     */ 
+    char *segment_type = (program_header.p_type <= PT_PHDR) ? segment_types[program_header.p_type] : "UNKNOWN";
+
+
+    sprintf(buffer, "%d\t%s\t\t%016lx\t%016lx\t%016lx\t%016lx\t%016lx\t%d\t%lu\n", 
+                index,
+                segment_type,
+                program_header.p_offset,
+                program_header.p_vaddr,
+                program_header.p_paddr,
+                program_header.p_filesz,
+                program_header.p_memsz,
+                program_header.p_flags,
+                program_header.p_align);
+}
+
+
+
 char *stringify_ELF64_program_header_table(ELF64_Program_Header_t *program_header_table, ELF64_Header_t *file_header, char ***section_to_segment_mapping)
 {
-    fprintf(stderr, "TODO: Implement stringification of 64-bit ELF program header table.\n");
-    return NULL;
+
+
+    /*
+     * Defensive check to prevent segmentation
+     * fault from NULL pointer being passed.
+     */
+    if(program_header_table == NULL || file_header == NULL || section_to_segment_mapping == NULL)
+    {
+        fprintf(stderr, "NULL pointer passed to stringify_ELF64_section_header_table.\n");
+        return NULL;
+    }
+
+
+    /*
+     * Temporary buffer to store strings before they
+     * are concatenated onto the output string.
+     */
+    char buffer[2048];
+
+
+    /*
+     * For creating output string need to dynamically allocate
+     * memory. However, the ELF header string is continually
+     * growing, so there is a need to allocate enough memory
+     * and then some for the current size of the string. Thus,
+     * max_size gives the size allocated, and current_size gives
+     * the current size of the string, i.e. current_size is how
+     * much of the buffer of max_size is actually taken up by
+     * the string. When adding new text to the string causes
+     * current_size to become greater than max_size, then the
+     * string must be reallocated.
+     */
+    int max_size = 64, current_size = 0;
+
+
+    // allocate an initial buffer of 64 bytes
+    char *output_string = (char*) malloc(max_size*sizeof(char));
+
+
+
+    char *file_types[] = {
+        [ET_NONE] = "NONE",
+        [ET_REL] = "REL (Relocatable File)",
+        [ET_EXEC] = "EXEC (Executable File)",
+        [ET_DYN] = "DYN (Position Independent executable file)",
+        [ET_CORE] = "CORE (Core Dump file)"
+    };
+
+
+    sprintf(buffer, "\nELF file type is %s\n", file_types[file_header->e_type]);
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+
+    sprintf(buffer, "Entry point is 0x%lx\n", file_header->e_entry);
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+    sprintf(buffer, "There are %d section headers starting at offset %lu\n\n", file_header->e_phnum, file_header->e_phoff);
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+    sprintf(buffer, "Program Headers:\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+
+    sprintf(buffer, "Number\tType\t\tOffset\t\t\tVirtAddr\t\tPhysAddr\t\tFileSize\t\tMemSize\t\t\tFlags\tAlign\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+
+    sprintf(buffer, "-------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+
+    for(int i = 0; i < file_header->e_phnum; i++)
+    {
+        stringify_ELF64_program_header(buffer, program_header_table, i);
+        CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+    }
+
+
+    sprintf(buffer, "\n\nSection to Segment mapping:\n\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+    sprintf(buffer, "Segment Number\tSection Name\n");
+    CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+
+    for(int i = 0; i < file_header->e_phnum; i++)
+    {
+        sprintf(buffer, "%d\t\t", i);
+        CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+
+        for(int j = 0; section_to_segment_mapping[i][j] != NULL; j++)
+        {
+            CONCATENATE_DYNAMIC_STRING(output_string, section_to_segment_mapping[i][j], max_size, current_size);
+            
+            sprintf(buffer, " ");
+            CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+        }
+
+        sprintf(buffer, "\n");
+        CONCATENATE_DYNAMIC_STRING(output_string, buffer, max_size, current_size);
+    }
+
+
+    return output_string;
 }
 
 

@@ -400,7 +400,28 @@ static char *dump_ELF32_program_headers(FILE *input_file)
      * the dynamically-allocated memory.
      */
     output_string = stringify_ELF32_program_header_table(program_header_table, &file_header, section_to_segment_mapping);
+    
+    
+
+    /*
+     * Free all dynamically-allocated memory
+     * that is no longer needed.
+     */
     free(program_header_table);
+
+    for(int i = 0; i < file_header.e_phnum; i++)
+    {
+        for(int j = 0; section_to_segment_mapping[i][j] != NULL; j++)
+        {
+            free(section_to_segment_mapping[i][j]);
+        }
+
+        free(section_to_segment_mapping[i]);
+    }
+
+    free(section_to_segment_mapping);
+
+
 
     return output_string;
 }
@@ -442,7 +463,28 @@ static char *dump_ELF64_program_headers(FILE *input_file)
 
 
     output_string = stringify_ELF64_program_header_table(program_header_table, &file_header, section_to_segment_mapping);
+
+
+
+    /*
+     * Free all dynamically-allocated memory
+     * that is no longer needed.
+     */
     free(program_header_table);
+
+    for(int i = 0; i < file_header.e_phnum; i++)
+    {
+        for(int j = 0; section_to_segment_mapping[i][j] != NULL; j++)
+        {
+            free(section_to_segment_mapping[i][j]);
+        }
+
+        free(section_to_segment_mapping[i]);
+    }
+
+    free(section_to_segment_mapping);
+
+
 
     return output_string;
 }

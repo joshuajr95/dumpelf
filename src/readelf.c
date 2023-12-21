@@ -119,7 +119,7 @@ static char **get_ELF32_section_names(FILE *input_file)
         ELF32_Word_t index = section_header_table[i].sh_name;
 
         // allocate new string based on length in string table
-        section_names[i] = (char*) malloc(strlen(buffer+index));
+        section_names[i] = (char*) malloc(strlen(buffer+index)+1);
 
         // copy from string table into newly allocated string
         strcpy(section_names[i], buffer+index);
@@ -197,11 +197,12 @@ static char **get_ELF64_section_names(FILE *input_file)
      */
     for(int i = 0; i < file_header.e_shnum; i++)
     {
+
         // index into string table gives name of section
         ELF64_Word_t index = section_header_table[i].sh_name;
 
         // allocate new string based on length in string table
-        section_names[i] = (char*) malloc(strlen(buffer+index));
+        section_names[i] = (char*) malloc(strlen(buffer+index)+1);
 
         // copy from string table into newly allocated string
         strcpy(section_names[i], buffer+index);
@@ -582,6 +583,7 @@ char ***get_ELF32_section_to_segment_mapping(FILE *input_file)
 
 
 
+
 char ***get_ELF64_section_to_segment_mapping(FILE *input_file)
 {
     ELF64_Header_t file_header;
@@ -594,7 +596,7 @@ char ***get_ELF64_section_to_segment_mapping(FILE *input_file)
 
     // ELF header has important information
     fseek(input_file, 0, SEEK_SET);
-    fread(&file_header, sizeof(file_header), 1, input_file);
+    fread(&file_header, sizeof(ELF64_Header_t), 1, input_file);
 
 
     /*
@@ -607,15 +609,7 @@ char ***get_ELF64_section_to_segment_mapping(FILE *input_file)
 
 
     // allocate space for mapping
-    section_to_segment_mapping = malloc(sizeof(*section_to_segment_mapping));
-
-
-    /*
-     * To keep track of which sections
-     * have already been added to a
-     * segment.
-     */
-    bool already_added[file_header.e_shnum];
+    section_to_segment_mapping = malloc(sizeof(*section_to_segment_mapping)*file_header.e_phnum);
 
 
     // build the mapping one program header at a time
@@ -623,6 +617,12 @@ char ***get_ELF64_section_to_segment_mapping(FILE *input_file)
     {
         ELF64_Off_t segment_offset = program_header_table[i].p_offset;
         ELF64_Xword_t segment_size = program_header_table[i].p_filesz;
+
+
+        // for determining segment membership for NOBITS sections
+        ELF64_Addr_t segment_address = program_header_table[i].p_vaddr;
+        ELF64_Addr_t segment_mem_size = program_header_table[i].p_memsz;
+
 
 
         /* 
@@ -635,7 +635,7 @@ char ***get_ELF64_section_to_segment_mapping(FILE *input_file)
          * cannot be more than the total number of
          * sections in the file.
          */
-        section_to_segment_mapping[i] = malloc(sizeof(*(section_to_segment_mapping[i]))*(file_header.e_shnum + 1));
+        section_to_segment_mapping[i] = malloc(sizeof(char*)*(file_header.e_shnum + 1));
 
 
         /*
@@ -648,11 +648,12 @@ char ***get_ELF64_section_to_segment_mapping(FILE *input_file)
 
         for(int j = 0; j < file_header.e_shnum; j++)
         {
-            if(already_added[j] == true)
-                continue;
-            
+
             ELF64_Off_t section_offset = section_header_table[j].sh_offset;
             ELF64_Xword_t section_size = section_header_table[j].sh_size;
+
+            // for NOBITS sections
+            ELF64_Addr_t section_address = section_header_table[j].sh_addr;
 
             if( (section_offset >= segment_offset) && (section_offset + section_size <= segment_offset + segment_size) )
             {
@@ -661,8 +662,23 @@ char ***get_ELF64_section_to_segment_mapping(FILE *input_file)
                 section_to_segment_mapping[i][current_segment_index] = malloc(sizeof(char)*(strlen(section_name)+1));
 
                 strcpy(section_to_segment_mapping[i][current_segment_index], section_name);
+
                 current_segment_index++;
             }
+
+            if(section_header_table[j].sh_type == SHT_NOBITS 
+                        && section_address >= segment_address 
+                        && section_address + section_size <= segment_address + segment_mem_size)
+            {
+                char *section_name = section_names[j];
+
+                section_to_segment_mapping[i][current_segment_index] = malloc(sizeof(char)*(strlen(section_name)+1));
+
+                strcpy(section_to_segment_mapping[i][current_segment_index], section_name);
+
+                current_segment_index++;
+            }
+
         }
 
         section_to_segment_mapping[i][current_segment_index] = NULL;
